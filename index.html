@@ -385,14 +385,129 @@ function body(c,frame,expr){
  g.col(11,fy+1,sk[3]);
  return{g,mats}}
 
-return{portrait,body,render,ramp};
+
+/* ---------- SIDE VIEW BODY 24x46 (facing right; flip for left) ---------- */
+function bodySide(c,frame,expr,pose){
+ const g=Grid(24,46),cx=11,walk=frame===1||frame===2,bob=walk?1:0,Y=y=>y+bob,seated=pose==='seated';
+ const mats={skin:c.skin,hair:c.hair||'#3a2418',beard:c.beard||c.hair||'#3a2418',cloth:c.robe,trim:c.trim,cape:c.cape||c.robe,hat:c.hatc||c.robe,gold:'#e3b54e',metal:'#9aa3b0',wood:'#7a4a26',boot:'#3a2a20',gem2:c.itemc||'#9fd0ff',back:c.robe};
+ const longHair=c.hs===2,sw=frame===1?2:frame===2?-2:0;
+ // bow / cape / long hair behind
+ if(c.item==='bow')for(let y=Y(12);y<=Y(34);y++)g.set(Math.round(7-Math.sin((y-Y(12))/22*Math.PI)*2),y,'wood',1);
+ if(c.cape)g.cyl(8.6,Y(13),seated?Y(34):42,y=>Math.min(3.2,2+(y-Y(13))*.06),'cape');
+ if(longHair&&!['helm','hood','veil'].includes(c.hat))g.blob(9,Y(11),3.4,8,'hair',(x,y)=>y>=Y(6)&&x<=11);
+ if(c.hat==='hood'||c.hat==='veil')g.blob(10.4,Y(10),5,7.6,'hat',(x,y)=>y>=Y(2)&&x<=13);
+ // legs
+ if(!seated){
+  const legs=frame===1?[[13,1],[8,0]]:frame===2?[[8,1],[13,0]]:[[10,1],[11,0]];
+  for(const[lx,front]of legs)for(let y=38;y<=44;y++){const boot=y>=42;g.set(lx,y,boot?'boot':'cloth',front?(boot?2:1):(boot?1:0));g.set(lx+1,y,boot?'boot':'cloth',front?(boot?1:1):0);if(y===44)g.set(lx+2,y,'boot',front?2:1)}
+ }else{for(let x=11;x<=19;x++)for(let y=Y(33);y<=Y(35);y++)g.set(x,y,'cloth',y===Y(33)?2:1);for(let y=Y(35);y<=Y(42);y++){g.set(18,y,'cloth',1);g.set(19,y,'cloth',1)}for(let x=18;x<=21;x++)g.set(x,Y(43),'boot',2)}
+ // torso
+ g.cyl(cx,Y(13),seated?Y(35):Y(39),y=>y<Y(16)?3.2+(y-Y(13))*.3:Math.min(4.8,4+(y-Y(16))*.05),'cloth');
+ for(let x=7;x<=15;x++)if(g.get(x,Y(25))==='cloth')g.set(x,Y(25),'trim',x>11?2:1);
+ if(!seated)for(let x=5;x<=17;x++)if(g.get(x,Y(39))==='cloth')g.set(x,Y(39),'trim',1);
+ if(c.armor)for(let y=Y(14);y<=Y(24);y++)for(let x=6;x<=16;x++)if(g.get(x,y)==='cloth'&&y%2===0&&g.T[g.i(x,y)]>0)g.tone(x,y,g.T[g.i(x,y)]-1);
+ for(let x=10;x<=13;x++)g.set(x,Y(13),'trim',3);
+ // head (profile): skull + jaw forward + nose
+ g.blob(10.8,Y(7.8),4.3,4.6,'skin');g.blob(12,Y(10),3.5,2.8,'skin',(x,y)=>y>=Y(9));
+ g.set(15,Y(8),'skin',2);g.set(16,Y(9),'skin',2);g.set(15,Y(9),'skin',2);
+ for(let y=Y(12);y<=Y(13);y++)for(let x=10;x<=12;x++)g.set(x,y,'skin',0);
+ g.set(9,Y(8),'skin',1);g.set(9,Y(9),'skin',0);
+ if(c.beard)g.blob(12.4,Y(11),3.6,2.6,'beard',(x,y)=>y>=Y(9.5)&&x>=10);
+ if(c.hs&&!['helm','hood','veil'].includes(c.hat))g.blob(10.2,Y(6.6),4.8,4.4,'hair',(x,y)=>y<=Y(4)||(x<=11&&y<=Y(longHair?11:9))||(y<=Y(5)&&x<=14));
+ const H=c.hat;
+ if(H==='crown'){for(let x=7;x<=14;x++){g.set(x,Y(3),'gold',2);g.set(x,Y(4),'gold',x>11?2:1)}for(const x of[7,10,12,14])g.set(x,Y(2),'gold',3);g.set(11,Y(1),'gold',3);g.col(12,Y(3),'#c0283a')}
+ if(H==='circlet'){for(let x=7;x<=14;x++)g.set(x,Y(4),'gold',x>11?3:1);g.col(14,Y(4),'#7ad0ff')}
+ if(H==='helm'){g.blob(10.6,Y(6.4),5.2,5,'metal',(x,y)=>y<=Y(6)||x<=9);for(let y=Y(6);y<=Y(10);y++)g.set(15,y,'metal',1);g.set(12,Y(3),'metal',3);g.set(11,Y(3),'metal',3)}
+ if(H==='hood'||H==='veil'){g.blob(10.6,Y(6.6),5.2,5,'hat',(x,y)=>y<=Y(5)||x<=10);if(H==='veil')for(let y=Y(4);y<=Y(11);y++)g.set(11,y,'trim',2)}
+ if(H==='turban'){g.blob(10.4,Y(4.6),5.2,3.6,'hat',(x,y)=>y<=Y(6));for(let x=6;x<=15;x++)if(g.get(x,Y(4))==='hat'&&x%3===0)g.tone(x,Y(4),1);g.col(14,Y(3),'#c0283a')}
+ if(H==='cap'){g.blob(10.4,Y(4.8),4.8,3.2,'hat',(x,y)=>y<=Y(5));for(let x=12;x<=17;x++)g.set(x,Y(5),'hat',1)}
+ // front arm (swings when walking) + hand
+ const hx=13+(seated?3:sw),hy=Y(seated?28:26);
+ for(let y=Y(14);y<=hy-1;y++){const t=(y-Y(14))/(hy-Y(14));const x=Math.round(12+(hx-12)*t);g.set(x,y,'cloth',2);g.set(x+1,y,'cloth',1)}
+ g.blob(hx+.9,hy+.3,1.4,1.4,'skin');
+ // held items
+ const ix=hx+1;
+ if(c.item==='spear'||c.item==='staff'){for(let y=Y(3);y<=(seated?Y(43):44);y++)g.set(ix+1,y,'wood',2);if(c.item==='spear')g.blob(ix+1.5,Y(2),1.3,2.8,'metal');else g.blob(ix+1.5,Y(3),1.8,1.8,'gem2')}
+ if(c.item==='sword'){for(let y=Y(24);y<=Y(37);y++){g.set(8,y,'metal',y%3?3:1)}for(let x=7;x<=9;x++)g.set(x,Y(25),'gold',2)}
+ if(c.item==='scroll'){for(let y=hy-2;y<=hy;y++)for(let x=ix;x<=ix+2;x++)g.set(x,y,'trim',y===hy-2?3:2)}
+ if(c.item==='basket'){g.blob(ix+1.5,hy+2,2.4,1.8,'wood');g.col(ix+1,hy,'#e8c070')}
+ // face (profile)
+ const D='#1d1320',W='#f1ebe2',sk=ramp(c.skin),BR=ramp(c.hair||'#2a1c14')[0],fy=Y(7),e=expr||'neutral';
+ const eye=c.eye||'#3a2418';
+ g.col(13,fy,W);g.col(14,fy,e==='fierce'?'#ff8a2a':D);
+ if(e==='happy'){g.col(13,fy,sk[2]);g.col(14,fy,sk[2]);g.col(13,fy-1,D);g.col(14,fy-1,D);g.col(14,fy+4,D);g.col(15,fy+3,D)}
+ else if(e==='angry'||e==='fierce'){g.col(13,fy-2,BR);g.col(14,fy-1,BR);g.col(13,fy+4,D);g.col(14,fy+4,D)}
+ else if(e==='sad'){g.col(14,fy-2,BR);g.col(13,fy-1,BR);g.col(14,fy+1,'#8ac8ff');g.col(14,fy+4,sk[0]);g.col(15,fy+5,sk[0])}
+ else if(e==='shock'){g.col(13,fy-1,W);g.col(14,fy-1,W);g.col(14,fy+4,D);g.col(14,fy+5,D);g.col(8,fy-2,'#9fd8ff')}
+ else if(e==='smug'||e==='cold'){g.col(13,fy-1,sk[0]);g.col(14,fy-1,sk[0]);g.col(14,fy+4,sk[0]);if(e==='smug')g.col(15,fy+3,D)}
+ else if(e==='tired'){g.col(13,fy-1,sk[0]);g.col(14,fy-1,sk[0]);g.col(14,fy+1,sk[1]);g.col(14,fy+4,sk[0])}
+ else{g.col(14,fy+4,sk[0]);g.col(13,fy-2,BR);g.col(14,fy-2,BR)}
+ return{g,mats}}
+
+/* ---------- THREE-QUARTER BODY 24x46 (turned to the right; flip for left) ---------- */
+function body34(c,frame,expr){
+ const g=Grid(24,46),cx=11.6,walk=frame===1||frame===2,bob=walk?1:0,Y=y=>y+bob;
+ const mats={skin:c.skin,hair:c.hair||'#3a2418',beard:c.beard||c.hair||'#3a2418',cloth:c.robe,trim:c.trim,cape:c.cape||c.robe,hat:c.hatc||c.robe,gold:'#e3b54e',metal:'#9aa3b0',wood:'#7a4a26',boot:'#3a2a20',gem2:c.itemc||'#9fd0ff'};
+ const longHair=c.hs===2,sw=frame===1?1:frame===2?-1:0;
+ if(c.item==='bow')for(let y=Y(10);y<=Y(34);y++)g.set(Math.round(5-Math.sin((y-Y(10))/24*Math.PI)*1.6),y,'wood',1);
+ if(longHair&&c.hat!=='helm')g.blob(10.6,Y(11),5.4,9,'hair',(x,y)=>y>=Y(6)&&x<=13);
+ if(c.cape)g.cyl(10.8,Y(13),42,y=>Math.min(8,5+(y-Y(13))*.22),'cape');
+ if(c.hat==='hood'||c.hat==='veil')g.blob(11.6,Y(8),5.4,7.4,'hat',(x,y)=>y>=Y(1));
+ // legs: stride when walking
+ const L=frame===1?[[9,0],[14,1]]:frame===2?[[9,1],[14,0]]:[[9,1],[13,1]];
+ for(const[lx,up]of L)for(let y=38;y<=44-(walk&&up?1:0);y++){const boot=y>=42-(walk&&up?1:0);g.set(lx,y,boot?'boot':'cloth',boot?2:0);g.set(lx+1,y,boot?'boot':'cloth',boot?1:0);if(boot&&y===44-(walk&&up?1:0))g.set(lx+2,y,'boot',1)}
+ // back arm (partly hidden)
+ for(let y=Y(15);y<=Y(24);y++)g.set(5,y,'cloth',0);g.set(5,Y(25),'skin',0);
+ // robe
+ g.cyl(cx,Y(13),Y(39),y=>y<Y(16)?4.6+(y-Y(13))*.6:Math.min(7,6.2+(y-Y(16))*.05),'cloth');
+ for(let x=6;x<=18;x++)if(g.get(x,Y(25))==='cloth')g.set(x,Y(25),'trim',x<12?3:2);
+ for(let y=Y(26);y<=Y(39);y++)g.set(14,y,'trim',1);
+ for(let x=4;x<=19;x++)if(g.get(x,Y(39))==='cloth')g.set(x,Y(39),'trim',1);
+ if(c.armor)for(let y=Y(14);y<=Y(24);y++)for(let x=5;x<=18;x++)if(g.get(x,y)==='cloth'&&y%2===0&&g.T[g.i(x,y)]>0)g.tone(x,y,g.T[g.i(x,y)]-1);
+ for(let x=10;x<=16;x++)g.set(x,Y(13),'trim',3);
+ // front arm + hand
+ for(let y=Y(14);y<=Y(25);y++){g.set(18,y,'cloth',2);g.set(19,y,'cloth',1)}
+ g.blob(19.2+sw*.5,Y(26.5),1.5,1.6,'skin');
+ // head turned: features toward the right, ear and hair mass on the left
+ g.blob(12,Y(7.6),4.4,4.7,'skin');g.blob(12.8,Y(9.4),3.6,3.6,'skin',(x,y)=>y>=Y(8));
+ g.set(16,Y(8),'skin',2);g.set(17,Y(9),'skin',1);g.set(16,Y(9),'skin',2);
+ for(let y=Y(12);y<=Y(13);y++)for(let x=11;x<=14;x++)g.set(x,y,'skin',0);
+ g.set(8,Y(8),'skin',1);g.set(8,Y(9),'skin',0);
+ if(c.beard)g.blob(13,Y(10.6),3.8,2.9,'beard',(x,y)=>y>=Y(9.2));
+ if(c.hs&&!['helm','hood','veil'].includes(c.hat))g.blob(11.6,Y(6.4),5,4.4,'hair',(x,y)=>y<=Y(4)||(x<=9&&y<=Y(longHair?12:9))||(x<=10&&y<=Y(6)));
+ const H=c.hat;
+ if(H==='crown'){for(let x=8;x<=16;x++){g.set(x,Y(3),'gold',2);g.set(x,Y(4),'gold',x>12?1:2)}for(const x of[8,11,14,16])g.set(x,Y(2),'gold',3);g.set(12,Y(1),'gold',3);g.col(13,Y(3),'#c0283a')}
+ if(H==='circlet'){for(let x=8;x<=16;x++)g.set(x,Y(4),'gold',x<12?3:1);g.col(15,Y(4),'#7ad0ff')}
+ if(H==='helm'){g.blob(11.8,Y(6.2),5.4,5,'metal',(x,y)=>y<=Y(6)||x<=9);for(let y=Y(6);y<=Y(10);y++)g.set(7,y,'metal',1);g.set(15,Y(7),'metal',3);g.set(15,Y(8),'metal',2);g.set(11,Y(3),'metal',3)}
+ if(H==='hood'||H==='veil'){g.blob(12.6,Y(8.4),3.5,4.4,'skin',(x,y)=>y>=Y(5));for(let x=10;x<=16;x++)g.set(x,Y(5),'hat',1);g.set(16,Y(8),'skin',2);g.set(17,Y(9),'skin',1);if(H==='veil')for(let x=10;x<=16;x++)g.set(x,Y(4),'trim',2)}
+ if(H==='turban'){g.blob(11.8,Y(4.4),5.4,3.8,'hat',(x,y)=>y<=Y(6));for(let x=7;x<=17;x++)if(g.get(x,Y(4))==='hat'&&x%3===0)g.tone(x,Y(4),1);g.col(15,Y(3),'#c0283a')}
+ if(H==='cap'){g.blob(11.8,Y(4.6),5,3.2,'hat',(x,y)=>y<=Y(5));for(let x=11;x<=18;x++)g.set(x,Y(5),'hat',1)}
+ // items in front hand
+ if(c.item==='spear'||c.item==='staff'){for(let y=Y(4);y<=44;y++)g.set(21,y,'wood',2);if(c.item==='spear')g.blob(21.5,Y(3),1.3,3,'metal');else g.blob(21.5,Y(4),1.8,1.8,'gem2')}
+ if(c.item==='sword'){for(let y=Y(22);y<=Y(34);y++){g.set(21,y,'metal',3);g.set(22,y,'metal',1)}for(let x=20;x<=23;x++)g.set(x,Y(25),'gold',2)}
+ if(c.item==='scroll'){for(let x=18;x<=21;x++){g.set(x,Y(25),'trim',3);g.set(x,Y(26),'trim',2)}}
+ if(c.item==='basket'){g.blob(20.2,Y(28),2.6,2,'wood');g.col(20,Y(26),'#e8c070');g.col(21,Y(26),'#d9a35a')}
+ // face: far eye small, near eye with white
+ const D='#1d1320',W='#f1ebe2',sk=ramp(c.skin),BR=ramp(c.hair||'#2a1c14')[0],fy=Y(8),e=expr||'neutral',far=11,near=14;
+ const eyes=(col)=>{g.col(far,fy,col||D);g.col(near,fy,W);g.col(near+1,fy,col||D)};
+ if(e==='happy'){g.col(far,fy-1,D);g.col(near,fy-1,D);g.col(near+1,fy-1,D);g.col(13,fy+3,D);g.col(14,fy+3,D);g.col(12,fy+2,D);g.col(15,fy+2,D)}
+ else{eyes(e==='fierce'?'#ff8a2a':null);
+  if(e==='angry'||e==='fierce'){g.col(far-1,fy-1,BR);g.col(near,fy-1,BR);g.col(near+1,fy-2,BR);g.col(13,fy+3,D);g.col(14,fy+3,D)}
+  else if(e==='sad'){g.col(far,fy-2,BR);g.col(near,fy-2,BR);g.col(near+1,fy-1,BR);g.col(near,fy+1,'#8ac8ff');g.col(13,fy+3,sk[0]);g.col(12,fy+4,sk[0]);g.col(15,fy+4,sk[0])}
+  else if(e==='shock'){g.col(near,fy-1,W);g.col(near+1,fy-1,W);g.col(13,fy+3,D);g.col(13,fy+4,D);g.col(14,fy+3,D);g.col(7,fy-3,'#9fd8ff')}
+  else if(e==='smug'||e==='cold'||e==='tired'){g.col(near,fy-1,sk[0]);g.col(near+1,fy-1,sk[0]);g.col(far,fy-1,sk[0]);g.col(13,fy+3,sk[0]);g.col(14,fy+3,sk[0]);if(e==='smug')g.col(15,fy+2,D)}
+  else{g.col(near,fy-2,BR);g.col(near+1,fy-2,BR);g.col(13,fy+3,sk[0]);g.col(14,fy+3,sk[0])}}
+ g.col(15,fy+1,sk[3]);
+ return{g,mats}}
+
+return{portrait,body,body34,bodySide,render,ramp};
 })();
 
 /* cached access by character key */
 const SPR=(()=>{const cache=new Map();
  const get=(kind,key,expr,frame)=>{const id=kind+'|'+key+'|'+expr+'|'+(frame||0);let cv=cache.get(id);if(cv)return cv;
-  const c=C[key]||C.guard;const r=kind==='p'?SP2.portrait(c,expr):SP2.body(c,frame||0,expr);cv=SP2.render(r.g,r.mats,document.createElement('canvas'));cache.set(id,cv);return cv};
- return{portrait:(k,e)=>get('p',k,e||'neutral'),body:(k,f,e)=>get('b',k,e||'neutral',f),
+  const c=C[key]||C.guard;const r=kind==='p'?SP2.portrait(c,expr):kind==='s'?SP2.bodySide(c,frame||0,expr,'stand'):kind==='k'?SP2.bodySide(c,0,expr,'seated'):kind==='t'?SP2.body34(c,frame||0,expr):SP2.body(c,frame||0,expr);cv=SP2.render(r.g,r.mats,document.createElement('canvas'));cache.set(id,cv);return cv};
+ return{portrait:(k,e)=>get('p',k,e||'neutral'),body:(k,f,e)=>get('b',k,e||'neutral',f),side:(k,f,e)=>get('s',k,e||'neutral',f),q34:(k,f,e)=>get('t',k,e||'neutral',f),seated:(k,e)=>get('k',k,e||'neutral'),
   paint(cv,k,e,bg){const src=get('p',k,e||'neutral');cv.width=32;cv.height=32;const g=cv.getContext('2d');g.imageSmoothingEnabled=false;if(bg){g.fillStyle=bg;g.fillRect(0,0,32,32)}g.drawImage(src,0,0);return cv}};
 })();
 
@@ -817,6 +932,88 @@ const EXPR={
  deserters:['tired',['happy','neutral','sad']],
 };
 
+/* ---- data/events_ch3.js ---- */
+/* ===== DATA: chapter 3 cases (weeks 7–11) — keeps the second half busy ===== */
+Object.assign(E,{
+wellpoison:{who:'halima',pool:1,w:[7,10],text:'مولاي، بئر السوق صار مالحًا بين ليلة وضحاها. الناس يقولون إن أحدًا رمى فيه رماد الشرق. الأطفال يشربون منه لأن لا ماء غيره.',opts:[
+ {t:'سمر، طهّري البئر',req:'samar',e:{hap:6},r:'غلت سمر الماء بأعشاب مُرّة ثلاثة أيام. عاد البئر عذبًا، ووجدت في قاعه كيسًا ممزّقًا من ملح الرماد.'},
+ {t:'احفروا بئرًا جديدًا',cost:{gold:35},e:{hap:4},r:'بئر جديد خلف السوق، وحارس عليه ليلًا ونهارًا.'},
+ {t:'اللاجئون جلبوا هذا الملح',need:()=>F('refugees'),hint:'إن كنت استقبلت اللاجئين',e:{hap:2,moon:-15,set:['blamed']},r:'هدأ الناس قليلًا. لكنّ مريم وأهلها ينامون الآن خلف أبواب مغلقة، والرهبنة غاضبة.'},
+]},
+spyinkitchen:{who:'cook',pool:1,w:[7,11],text:'رجل غريب يأتي المطبخ كل فجر يبيع البيض، ولا يسأل إلا عن شيء واحد: متى يتبدّل حرس البوابة الشرقية؟',opts:[
+ {t:'نوال، اتبعيه',req:'nawal',e:{enemy:-15,clues:1},r:'قادها بائع البيض إلى مخبأ فيه خرائط لأسوارك. أحرقتها نوال، وحملت معها رسالة مختومة بأسد.'},
+ {t:'ضاعفوا الحرس عند الفجر',e:{hap:-2},r:'الحرس متعبون، لكنّ بائع البيض لم يعد.'},
+ {t:'رقيّة تتوهّم',e:{enemy:15},r:'بعد أسبوع، كان جيش بهرام يعرف مواعيد حرسك بالدقيقة.'},
+]},
+fletchers:{who:'smith',pool:1,w:[7,11],text:'السهام يا مولاي. عندنا أقواس ولا سهام. أربعون ذهبًا تشتري ريشًا وحديدًا لعشرة آلاف سهم.',opts:[
+ {t:'اصنعوها',cost:{gold:40},e:{set:['arrows']},r:'عشرة آلاف سهم في مخازن الأسوار: +٢٠ يوم الحصار.'},
+ {t:'نصفها يكفي',cost:{gold:20},e:{set:['halfarrows']},r:'خمسة آلاف سهم: +١٠ يوم الحصار.'},
+ {t:'لدينا ما يكفي',e:{},r:'هزّ بكر رأسه وخرج يعدّ السهام القليلة.'},
+]},
+bells:{who:'priest',pool:1,w:[7,11],text:'برج الأجراس قديم يا ملك، وحباله مهترئة. إن جاء بهرام ليلًا فلن يسمع أحد. عشر قطع لحبال جديدة.',opts:[
+ {t:'حبال جديدة وحارس للبرج',cost:{gold:10},e:{hap:3,set:['bells']},r:'دقّ الجرس تجربةً فسمعته القرى البعيدة. الناس ناموا تلك الليلة أهدأ.'},
+ {t:'الأجراس للأعياد لا للحروب',e:{hap:-1},r:'تمتم الشيخ بدعاء وخرج.'},
+]},
+deserter:{who:'deserter',pool:1,w:[8,11],text:'لا تقتلوني. كنتُ في جيش بهرام، ثم رأيت أطفالًا يأكلون الطين في معسكره. أعرف طرقه وأعداده. خذوا ما أعرف وأعطوني خبزًا.',opts:[
+ {t:'أطعموه واسمعوا',cost:{food:5},e:{set:['scouted'],enemy:-10,item:'passmap'},r:'رسم لك الممرّات الجبلية التي سيأتي منها بهرام، وعدّ رجاله واحدًا واحدًا.'},
+ {t:'قد يكون جاسوسًا: إلى القبو',e:{hap:1},r:'نام في القبو. بعد أسبوع كان قد اختفى، وبابه مفتوح.'},
+ {t:'أعيدوه إلى سيّده',e:{hap:-2,moon:-5},r:'سيق إلى الحدود. لم يلتفت.'},
+]},
+evacuate:{who:'mother',pool:1,w:[9,11],text:'نحن أمهات المدينة. إن جاء الحصار فأطفالنا أول من يموت. أرسلهم إلى الجبال قبل أن تُغلق الطرق.',opts:[
+ {t:'أهل القرن سيؤوونهم',need:()=>S.rel.horn>=50,hint:'يتطلب علاقة أهل القرن ٥٠',e:{hap:7,set:['evac']},r:'صعدت قافلة الأطفال إلى الجبال مع رجال برهان. المدينة صارت أهدأ، وأشد عزمًا.'},
+ {t:'قافلة بحماية الجند',cost:{gold:30,soldiers:5},e:{hap:6,set:['evac']},r:'وصل الأطفال إلى قرى الغرب سالمين.'},
+ {t:'لن تسقط المدينة',e:{hap:-4},r:'بكت أم سلمى عند الباب. بعض الأمهات هربن ليلًا بأطفالهن.'},
+]},
+hoarder:{who:'hoarder',pool:1,w:[8,11],text:'سمعتُ أن جلالتكم يبحث عن قمح. مخازني ممتلئة، والسعر… سعر الحرب. ستون ذهبًا لأربعين كيسًا.',opts:[
+ {t:'صادروا مخازنه لصالح الناس',e:{food:40,hap:5,river:-10},r:'امتلأت مخازن القصر، وهتف الناس. التجار عند النهر يتهامسون عن ملك يأخذ أموال التجار.'},
+ {t:'نشتري بسعره',cost:{gold:60},e:{food:40},r:'ابتسم شمّاس وهو يعدّ القطع.'},
+ {t:'قاسم، فاوضه',req:'qasim',e:{gold:-30,food:40},need:()=>S.gold>=30,hint:'يتطلب ٣٠ ذهبًا',r:'تكلّم قاسم معه بلغة التجار. خرج شمّاس بنصف ما أراد.'},
+ {t:'لا نتعامل مع المحتكرين',e:{hap:-3},r:'باع شمّاس قمحه لمن يدفع أكثر. ارتفع سعر الخبز في السوق.'},
+]},
+oil:{who:'daniel',who2:'smith',pool:1,w:[9,11],cond:()=>S.fort>=1,text:'الزيت المغلي يا مولاي. قدور على الأسوار وقنوات تصبّها على من يقترب من البوابة. ثلاثون ذهبًا، والأسوار جاهزة لها.',opts:[
+ {t:'ركّبوا القدور',cost:{gold:30},e:{set:['oil']},r:'قدور الزيت فوق البوابة: +٢٥ يوم الحصار.'},
+ {t:'ليس بعد',e:{},r:'طوى دانيال رسومه بعناية.'},
+]},
+ashchild:{who:'raad',pool:1,w:[8,10],text:'وجدتُ هذه الطفلة في الغابة يا مولاي. من أرض الرماد. ضاعت عن أهلها وهم يهربون. لا تتكلّم، تمسك يدي فقط.',opts:[
+ {t:'تبقى في القصر تحت رعايتي',e:{hap:2,moon:5,set:['ashchild']},r:'صار في القصر طفلة من الشرق. الملكة ديما تعلّمها كلماتنا.'},
+ {t:'أرسلها إلى المعبد',e:{moon:8},r:'الكاهنات سيعتنين بها.'},
+ {t:'أعيدوها إلى أهلها مع زاد',cost:{food:10},e:{enemy:-10,set:['goodwill']},r:'وصلت الطفلة إلى معسكر الرماد. يقول رعد إن الجنود هناك سكتوا طويلًا حين رأوا الخبز.'},
+]},
+levies:{who:'lordling',pool:1,w:[9,11],text:'نحن صغار النبلاء نملك رجالًا وخيلًا. أعطنا مقعدًا في مجلس الحرب، وستجد عشرين فارسًا عند بابك غدًا.',opts:[
+ {t:'لكم مقعد في المجلس',e:{soldiers:20,hap:-2,set:['nobleseat']},r:'عشرون فارسًا. والعامة يقولون إن النبلاء يشترون السلطة بالخيل.'},
+ {t:'قاتلوا لأنها أرضكم، لا لمقعد',e:{soldiers:8,hap:2},r:'جاء ثمانية فقط، لكنهم جاؤوا بلا شروط.'},
+ {t:'المجلس لي وحدي',e:{hap:1},r:'خرج وضّاح متجهّمًا.'},
+]},
+stables:{who:'stablemaster',pool:1,w:[10,11],text:'حريق في الإسطبلات يا مولاي! الخيل محبوسة والنار تأكل التبن.',opts:[
+ {t:'الجنود إلى النار',e:{soldiers:-3,hap:3},r:'أُنقذت الخيل كلها. ثلاثة جنود احترقت أيديهم.'},
+ {t:'افتحوا الأبواب ودعوا الخيل تهرب',e:{gold:-15},r:'هربت الخيل إلى الحقول. استُعيد أكثرها بثمن.'},
+ {t:'من أشعلها؟ نوال!',req:'nawal',e:{clues:1,hap:1},r:'وجدت نوال قارورة زيت مكسورة عليها ختم البرج الشرقي.'},
+]},
+anthem:{who:'bard',pool:1,w:[10,11],cond:()=>S.done.bard,text:'يا ملك! كتبتُ نشيدًا للأسوار. ليس للبيع هذه المرة. أريد فقط أن أغنّيه على البوابة ليلة الحصار.',opts:[
+ {t:'غنِّه على البوابة',e:{morale:8,hap:2},r:'سيغنّي الجنود نشيد زرياب وهم يصعدون الأسوار.'},
+ {t:'الليلة للصمت',e:{},r:'غنّاه في الحانات بدلًا من الأسوار.'},
+]},
+torches:{who:'watchman',pool:1,w:[11,11],text:'مولاي! مشاعل في الشرق، أكثر من نجوم السماء. بهرام على بُعد أيام.',opts:[
+ {t:'رعد، اذهب وعُدّها',req:'raad',e:{set:['scouted']},r:'عاد رعد قبل الفجر: يعرف الآن عددهم وطريقهم.'},
+ {t:'أشعلوا مشاعلنا على كل الأسوار',cost:{food:5},e:{morale:5},r:'من بعيد بدت أرْوَند أكبر مما هي. هكذا رآها بهرام على الأقل.'},
+ {t:'أطفئوا كل نار في المدينة',e:{hap:-2,enemy:-5},r:'نامت المدينة في الظلام. لا يعرف العدو أين يضرب.'},
+]},
+});
+Object.assign(EXPR,{
+ wellpoison:['sad',['happy','happy','neutral']],spyinkitchen:['neutral',['happy','neutral','sad']],fletchers:['neutral',['happy','neutral','sad']],
+ bells:['neutral',['happy','sad']],deserter:['tired',['happy','sad','sad']],evacuate:['sad',['happy','happy','angry']],
+ hoarder:['smug',['angry','smug','cold','smug']],oil:['happy',['happy','neutral']],ashchild:['sad',['happy','neutral','happy']],
+ levies:['smug',['smug','neutral','angry']],stables:['shock',['happy','neutral','neutral']],anthem:['happy',['happy','sad']],torches:['shock',['happy','happy','neutral']],
+});
+
+/* ---- data/items.js ---- */
+/* ===== DATA: royal treasury items =====
+   Each item can be used once: give to a faction or advisor, or sell. */
+Object.assign(ITEMS,{
+ passmap:{n:'خريطة الممرّات',d:'رسمها فارٌّ من جيش بهرام: الطرق الجبلية التي سيأتي منها.',uses:[
+  {t:'أعطها لرعد',e:{set:['scouted'],retmod:['raad',.1]}},{t:'بِعها لبني النهر',e:{gold:30,river:5}}]},
+});
+
 /* ---- data/missions.js ---- */
 /* ===== DATA: map locations and missions ===== */
 const LOC={
@@ -885,7 +1082,11 @@ const BR=['#2e2230','#30243a','#2a1f2d','#33263a','#2c2133','#2f2436','#281d2a',
 let actor=null,dust=[],sceneMode='room',sceneHook=null;
 for(let i=0;i<40;i++)dust.push({x:Math.random()*320,y:Math.random()*150,v:.05+Math.random()*.12});
 function sky(){const ch=chapter(S?S.week:1);return ch===1?['#f0c66a','#e39a4a']:ch===2?['#9a7ac0','#5a4a8a']:['#c4552b','#5a2a20']}
-function drawBody(key,x,feetY,frame,expr){const cv=SPR.body(key,frame,expr);g.drawImage(cv,Math.round(x-12),Math.round(feetY-45))}
+function drawQ(key,x,feetY,frame,expr,left){const cv=SPR.q34(key,frame,expr);x=Math.round(x);const y=Math.round(feetY-45);
+ if(left){g.save();g.translate(x,0);g.scale(-1,1);g.drawImage(cv,-12,y);g.restore()}else g.drawImage(cv,x-12,y)}
+function drawFront(key,x,feetY,expr){g.drawImage(SPR.body(key,0,expr),Math.round(x-12),Math.round(feetY-45))}
+function drawSide(key,x,feetY,frame,expr,left,seated){const cv=seated?SPR.seated(key,expr):SPR.side(key,frame,expr);x=Math.round(x);const y=Math.round(feetY-45);
+ if(left){g.save();g.translate(x,0);g.scale(-1,1);g.drawImage(cv,-11,y);g.restore()}else g.drawImage(cv,x-11,y)}
 function drawRoom(t){
  const W=320,H=180,night=S&&S.phase==='report';
  g.fillStyle='#1c1520';g.fillRect(0,0,W,H);
@@ -902,32 +1103,33 @@ function drawRoom(t){
  for(const px of[58,284]){g.fillStyle='#3f3044';g.fillRect(px-7,6,14,142);g.fillStyle='#4f3f55';g.fillRect(px-5,6,3,142);g.fillStyle='#2a1f2d';g.fillRect(px+4,6,3,142);g.fillStyle='#5a4a60';g.fillRect(px-9,4,18,4);g.fillRect(px-9,140,18,6);
   const fl=Math.sin(t/90+px)*1.2;g.fillStyle='#4a2a14';g.fillRect(px-1,60,3,8);g.fillStyle='rgba(255,170,60,.13)';g.beginPath();g.arc(px,56,18+fl,0,7);g.fill();g.fillStyle='#ff9a2a';g.fillRect(px-2,54-Math.round(fl),5,6);g.fillStyle='#ffe07a';g.fillRect(px-1,56-Math.round(fl),3,3)}
  for(let x=0;x<W;x+=16)for(let y=146;y<H;y+=8){g.fillStyle=((x+y)/8)%2?'#33261f':'#3d2f28';g.fillRect(x,y,16,8)}
- g.fillStyle='#7a1f2b';g.fillRect(40,152,280,13);g.fillStyle='#e3b54e';g.fillRect(40,152,280,1);g.fillRect(40,164,280,1);g.fillStyle='#5e1520';for(let x=48;x<W;x+=12)g.fillRect(x,157,4,3);
- // door
- const open=actor&&actor.x>286;
- g.fillStyle='#120d14';g.fillRect(292,96,26,52);g.fillRect(295,92,20,4);
- if(!open){g.fillStyle='#5a3a22';g.fillRect(294,98,22,50);g.fillStyle='#4a2e1a';for(let x=297;x<316;x+=5)g.fillRect(x,98,1,50);g.fillStyle='#8a8a90';g.fillRect(294,108,22,2);g.fillRect(294,134,22,2);g.fillStyle='#e3b54e';g.fillRect(297,122,2,3)}
- else{g.fillStyle=night?'#0a0a14':'#6a5a40';g.fillRect(294,98,22,50)}
- // throne (front view) with seated king
- g.fillStyle='#6a4a12';g.fillRect(8,80,44,72);g.fillStyle='#e3b54e';g.fillRect(9,81,42,70);g.fillStyle='#7a1f2b';g.fillRect(13,88,34,50);g.fillStyle='#5e1520';g.fillRect(13,88,2,50);
- g.fillStyle='#e3b54e';g.fillRect(24,72,12,8);g.fillRect(28,66,4,6);g.fillStyle='#c0283a';g.fillRect(29,75,2,2);g.fillStyle='#fff1a8';g.fillRect(10,82,2,2);g.fillRect(48,82,2,2);
- drawBody('king',30,146,0,'neutral');
- g.fillStyle='#6a4a12';g.fillRect(6,126,10,22);g.fillRect(44,126,10,22);g.fillStyle='#e3b54e';g.fillRect(6,124,10,3);g.fillRect(44,124,10,3);g.fillRect(7,127,8,1);g.fillRect(45,127,8,1);
- g.fillStyle='#7a1f2b';g.fillRect(16,134,28,6);g.fillStyle='#a3283a';g.fillRect(16,134,28,1);g.fillStyle='#6a4a12';g.fillRect(16,140,28,10);g.fillStyle='#e3b54e';g.fillRect(16,140,28,1);
+ g.fillStyle='#7a1f2b';g.fillRect(0,152,236,13);g.fillStyle='#e3b54e';g.fillRect(0,152,236,1);g.fillRect(0,164,236,1);g.fillRect(235,152,1,13);g.fillStyle='#5e1520';for(let x=6;x<232;x+=12)g.fillRect(x,157,4,3);
+ // door (left wall)
+ const open=actor&&actor.x<34;
+ g.fillStyle='#120d14';g.fillRect(2,96,26,52);g.fillRect(5,92,20,4);
+ if(!open){g.fillStyle='#5a3a22';g.fillRect(4,98,22,50);g.fillStyle='#4a2e1a';for(let x=7;x<26;x+=5)g.fillRect(x,98,1,50);g.fillStyle='#8a8a90';g.fillRect(4,108,22,2);g.fillRect(4,134,22,2);g.fillStyle='#e3b54e';g.fillRect(22,122,2,3)}
+ else{g.fillStyle=night?'#0a0a14':'#6a5a40';g.fillRect(4,98,22,50)}
+ // throne (front view, centre-right) with the king facing forward
+ const TX=212;
+ g.fillStyle='#6a4a12';g.fillRect(TX-22,80,44,72);g.fillStyle='#e3b54e';g.fillRect(TX-21,81,42,70);g.fillStyle='#7a1f2b';g.fillRect(TX-17,88,34,50);g.fillStyle='#5e1520';g.fillRect(TX-17,88,2,50);
+ g.fillStyle='#e3b54e';g.fillRect(TX-6,72,12,8);g.fillRect(TX-2,66,4,6);g.fillStyle='#c0283a';g.fillRect(TX-1,75,2,2);g.fillStyle='#fff1a8';g.fillRect(TX-20,82,2,2);g.fillRect(TX+18,82,2,2);
+ drawFront('king',TX,146,'neutral');
+ g.fillStyle='#6a4a12';g.fillRect(TX-24,126,10,22);g.fillRect(TX+14,126,10,22);g.fillStyle='#e3b54e';g.fillRect(TX-24,124,10,3);g.fillRect(TX+14,124,10,3);g.fillRect(TX-23,127,8,1);g.fillRect(TX+15,127,8,1);
+ g.fillStyle='#7a1f2b';g.fillRect(TX-14,134,28,6);g.fillStyle='#a3283a';g.fillRect(TX-14,134,28,1);g.fillStyle='#6a4a12';g.fillRect(TX-14,140,28,10);g.fillStyle='#e3b54e';g.fillRect(TX-14,140,28,1);
  // advisors present
- if(S){let i=0;for(const k of RKEYS){if(i>=4)break;if(inCastle(k)){drawBody(k,76+i*19,160,0,'neutral');i++}}}
- drawBody('guard',266,160,0,'neutral');
+ if(S){let i=0;for(const k of RKEYS){if(i>=4)break;if(inCastle(k)){drawQ(k,246+i*17,160,0,'neutral',true);i++}}}
+ drawQ('guard',44,160,0,'neutral',false);
  // petitioner
  if(actor){const sp=.9;
-  if(actor.state==='in'){actor.x-=sp;if(actor.x<=actor.tx){actor.x=actor.tx;actor.state='idle';const cb=actor.cb;actor.cb=null;cb&&cb()}}
-  else if(actor.state==='out'){actor.x+=sp*1.25;if(actor.x>=318){const cb=actor.cb;actor=null;cb&&cb()}}
-  if(actor){const fr=actor.state==='idle'?0:(Math.floor(t/150)%2)+1;drawBody(actor.who,actor.x,162,fr,actor.expr)}}
- if(!night){g.fillStyle='rgba(255,230,170,.5)';for(const d of dust){d.y+=d.v;d.x-=d.v*.4;if(d.y>150){d.y=20;d.x=70+Math.random()*200}g.fillRect(Math.round(d.x),Math.round(d.y),1,1)}}
+  if(actor.state==='in'){actor.x+=sp;if(actor.x>=actor.tx){actor.x=actor.tx;actor.state='idle';const cb=actor.cb;actor.cb=null;cb&&cb()}}
+  else if(actor.state==='out'){actor.x-=sp*1.25;if(actor.x<=2){const cb=actor.cb;actor=null;cb&&cb()}}
+  if(actor){const fr=actor.state==='idle'?0:(Math.floor(t/150)%2)+1;drawQ(actor.who,actor.x,162,fr,actor.expr,actor.state==='out')}}
+ if(!night){g.fillStyle='rgba(255,230,170,.5)';for(const d of dust){d.y+=d.v;d.x-=d.v*.4;if(d.y>150){d.y=20;d.x=40+Math.random()*220}g.fillRect(Math.round(d.x),Math.round(d.y),1,1)}}
  if(night){g.fillStyle='rgba(8,10,40,.5)';g.fillRect(0,0,W,H)}
  if(S&&chapter(S.week)>=3&&!night){g.fillStyle='rgba(120,40,20,.08)';g.fillRect(0,0,W,H)}
 }
 function loop(t){if(sceneMode==='room')drawRoom(t);else if(sceneMode==='map')drawMap(t);else if(sceneHook)sceneHook(t);requestAnimationFrame(loop)}
-function walkIn(who,expr,cb){actor={who,x:312,tx:188,state:'in',expr:expr||'neutral',cb};sfx('door')}
+function walkIn(who,expr,cb){actor={who,x:12,tx:150,state:'in',expr:expr||'neutral',cb};sfx('door')}
 function walkOut(cb){if(!actor){cb();return}actor.state='out';actor.cb=cb;sfx('steps')}
 function setActorExpr(e){if(actor)actor.expr=e}
 
@@ -1207,6 +1409,14 @@ function endWeek(){
  if(S.hap<=0){$('#nw').onclick=()=>ending('revolt');return}
  $('#nw').onclick=startWeek;$('#nw').focus();
 }
+
+/* ---- engine/systems.js ---- */
+/* ===== ENGINE: extra rules that plug into core ===== */
+/* siege bonuses from chapter-3 preparations */
+myPower.extra.push(parts=>{
+ if(F('arrows'))parts.push(['عشرة آلاف سهم',20]);else if(F('halfarrows'))parts.push(['خمسة آلاف سهم',10]);
+ if(F('oil'))parts.push(['قدور الزيت المغلي',25]);
+});
 
 /* ---- engine/ending.js ---- */
 /* ===== ENGINE: finale, endings, title, boot ===== */
