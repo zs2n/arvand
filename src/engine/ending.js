@@ -1,5 +1,5 @@
 /* ===== ENGINE: finale, endings, title, boot ===== */
-let FINALE=null;/* siege scene can replace the direct calculation */
+
 function finale(){
  if(F('peacedone')){ending('peace');return}
  if(FINALE){FINALE();return}

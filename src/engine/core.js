@@ -83,3 +83,4 @@ const ITEMS={};/* filled by data/items.js */
 const SAVE='arvand_save_v2';
 function save(){store.set(SAVE,S)}
 function load(){const s=store.get(SAVE,null);return s&&s.v===2?s:null}
+let FINALE=null;/* set by siege.js: replaces the direct battle calculation */
