@@ -26,7 +26,7 @@ function ending(k){
  $('#again').onclick=()=>title();
  run('endingBind',k);
 }
-HOOK.endingBind=[];
+HOOK.endingBind=HOOK.endingBind||[];
 function title(){
  const sv=load();
  $('#ov').hidden=false;$('#ov').innerHTML=`<div class="box"><div class="title-name">عرش أرْوَند</div><p class="title-sub">لعبة إدارة مملكة وقرارات</p>
@@ -40,7 +40,7 @@ function title(){
  $('#hp').onclick=()=>{showHelp();$('#mx').onclick=()=>title()};
  title.extra.forEach(b=>{$('#'+b.id).onclick=b.click});
 }
-title.extra=[];
+title.extra=title.extra||[];
 function boot(data){
  S=fresh();hud();$('#panel').innerHTML=`<h3>قاعة العرش</h3><p class="muted">الشموع مضاءة، والعرش ينتظر.</p>`;
  requestAnimationFrame(loop);

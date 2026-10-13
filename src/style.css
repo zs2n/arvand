@@ -135,7 +135,7 @@ h3{margin:0;font-family:var(--f-disp);font-size:22px;font-weight:800;color:var(-
 .settings label{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:6px;border-bottom:1px solid var(--stone2)}
 .settings input[type=checkbox]{width:20px;height:20px;accent-color:var(--gold)}
 .settings input[type=range]{accent-color:var(--gold)}
-.tut{position:fixed;inset-inline:0;bottom:0;z-index:30;display:flex;justify-content:center;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));pointer-events:none}
+.tut{position:fixed;inset-inline:0;top:0;z-index:15;display:flex;justify-content:center;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;pointer-events:none}
 .tut .box{pointer-events:auto;max-width:620px;display:flex;gap:12px;align-items:flex-start;padding:12px 14px}
 .tut canvas{width:64px;height:64px;image-rendering:pixelated;flex:none;background:linear-gradient(var(--stone3),var(--ink))}
 .tut p{margin:0;font-size:14.5px}

@@ -14,7 +14,7 @@ const F=f=>!!(S&&S.flags[f]);
 const chapter=w=>w<=4?1:w<=8?2:w<=11?3:4;
 const CH={1:['الفصل الأول','سنة العطش'],2:['الفصل الثاني','همسٌ في الأروقة'],3:['الفصل الثالث','ريح الرماد'],4:['الخاتمة','الحصار']};
 /* plug-in points used by later systems */
-const HOOK={weekStart:[],weekEnd:[],council:[],report:[],ending:[],optionsExtra:[],afterChoice:[]};
+const HOOK={weekStart:[],weekEnd:[],council:[],report:[],ending:[],endingBind:[],optionsExtra:[],afterChoice:[],afterOpts:[]};
 const run=(h,...a)=>HOOK[h].flatMap(f=>{const r=f(...a);return r==null?[]:[r]});
 
 function retState(k){const r=S.ret[k];if(!r||!r.on)return'غائب';if(r.inj>S.week)return'مصاب';if(S.missions.find(m=>m.ret===k))return'في مهمة';if(S.usedW[k])return'مشغول اليوم';return'متاح'}

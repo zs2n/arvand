@@ -67,7 +67,7 @@ function renderOpts(id){
  box.querySelectorAll('.opt').forEach(b=>b.onclick=()=>choose(id,+b.dataset.i));
  run('afterOpts',id);
 }
-HOOK.afterOpts=[];
+
 function reaction(id,o,ok){
  const ex=EXPR[id];if(o._i>=0&&ex&&ex[1][o._i]){if(ok===false)return MOOD.angry.includes(E[id].who)?'angry':'sad';return ex[1][o._i]}
  if(o.defer)return'tired';
