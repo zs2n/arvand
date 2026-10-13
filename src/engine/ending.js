@@ -44,7 +44,7 @@ title.extra=title.extra||[];
 function boot(data){
  S=fresh();hud();$('#panel').innerHTML=`<h3>قاعة العرش</h3><p class="muted">الشموع مضاءة، والعرش ينتظر.</p>`;
  requestAnimationFrame(loop);
- if(data&&data.S&&data.S.v===2&&data.S.phase!=='end'){S=data.S;S.lastCh=0;startWeek()}else title();
+ const hs=data&&migrate(data.S);if(hs&&hs.phase!=='end'){S=hs;S.lastCh=0;startWeek()}else title();
 }
 window.claude?.hot?.snapshot?.(()=>({S}));
 window.__arvand={get S(){return S},set S(v){S=v},E,M,choose,endWeek,finale,myPower,enemyPower,startWeek,renderCouncil,buildQueue,optionsOf,optState,apply,fresh};

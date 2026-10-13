@@ -82,5 +82,11 @@ const ITEMS={};/* filled by data/items.js */
 
 const SAVE='arvand_save_v2';
 function save(){store.set(SAVE,S)}
-function load(){const s=store.get(SAVE,null);return s&&s.v===2?s:null}
+/* older saves (made before later systems existed) get the missing fields from a fresh game */
+function migrate(s){if(!s||s.v!==2)return null;const f=fresh(s.diff||'normal');
+ for(const k in f)if(s[k]===undefined)s[k]=f[k];
+ for(const k of RKEYS)if(!s.ret[k])s.ret[k]=f.ret[k];else if(s.ret[k].mod===undefined)s.ret[k].mod=0;
+ for(const k of['market','son','stats','rel'])s[k]=Object.assign({},f[k],s[k]);
+ if(!DIFF[s.diff])s.diff='normal';return s}
+function load(){return migrate(store.get(SAVE,null))}
 let FINALE=null;/* set by siege.js: replaces the direct battle calculation */
