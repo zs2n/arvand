@@ -807,6 +807,28 @@ const SAVE='arvand_save_v2';
 function save(){store.set(SAVE,S)}
 function load(){const s=store.get(SAVE,null);return s&&s.v===2?s:null}
 
+/* ---- data/missions.js ---- */
+/* ===== DATA: map locations and missions ===== */
+const LOC={
+ castle:{n:'القلعة',x:150,y:105},village:{n:'قرية الطاحونة',x:92,y:138},forest:{n:'الغابة السوداء',x:205,y:158},
+ river:{n:'مرفأ بني النهر',x:52,y:74},horn:{n:'جبال القرن',x:132,y:30},moon:{n:'معبد القمر',x:38,y:168},ash:{n:'أرض الرماد',x:280,y:84},
+};
+const M=[
+ {id:'train',loc:'castle',n:'تدريب المجنّدين',d:'تحويل فلاحين إلى رماحين.',sk:'war',cost:{gold:20},dur:1,ok:()=>({soldiers:15}),no:()=>({soldiers:5}),okT:'تخرّج خمسة عشر رماحًا',noT:'صمد خمسة فقط حتى النهاية'},
+ {id:'fortify',loc:'castle',n:'ترميم الأسوار',d:'كل مستوى يضيف ثلاثين يوم الحصار (الحد ٣).',sk:'war',cost:{gold:50},dur:2,cond:()=>S.fort<3,ok:()=>({fort:1}),no:()=>({gold:20}),okT:'ارتفعت الأسوار طبقة',noT:'انهار جزء من الحائط، واستُرجع بعض المال'},
+ {id:'whispers',loc:'castle',n:'تتبّع الهمسات',d:'من يكتب إلى الشرق ليلًا؟',sk:'shadow',dur:1,cond:()=>S.ret.nawal.on&&!F('exposed'),ok:()=>({clues:1}),no:()=>({}),okT:'وُجد دليل جديد على الخائن',noT:'الأثر برد قبل أن يُلتقط'},
+ {id:'hunt',loc:'forest',n:'رحلة صيد',d:'لحمٌ للمخازن.',sk:'wild',dur:1,ok:()=>({food:22}),no:()=>({food:6}),okT:'عادت العربة محمّلة',noT:'صيدٌ شحيح'},
+ {id:'wolves',loc:'forest',n:'مطاردة عصابة الذئاب',d:'العصابة ما زالت تنهب القرى.',sk:'war',dur:1,risk:2,cond:()=>F('bandits')&&!F('banditsdone'),ok:()=>({hap:6,food:15,set:['banditsdone']}),no:()=>({}),okT:'تشتّتت العصابة واستُعيد القمح',noT:'أفلت الذئاب'},
+ {id:'aid',loc:'village',n:'العمل مع القرويين',d:'إصلاح السواقي والبيوت.',sk:'talk',dur:1,ok:()=>({hap:6}),no:()=>({hap:2}),okT:'القرية تشكر التاج',noT:'عمل قليل وكلام كثير'},
+ {id:'cure',loc:'village',n:'إيقاف الحمّى',d:'الحمّى تنتشر بين البيوت.',sk:'magic',dur:1,cond:()=>F('plague')&&!F('cured'),ok:()=>({hap:8,set:['cured']}),no:()=>({pop:-8}),okT:'انحسرت الحمّى',noT:'الحمّى أقوى من الأعشاب هذه المرة'},
+ {id:'dip_river',loc:'river',n:'سفارة إلى بني النهر',d:'هدايا وكلام طيّب.',sk:'talk',cost:{gold:15},dur:1,ok:()=>({river:12}),no:()=>({river:3}),okT:'مِهران راضٍ',noT:'استقبالٌ بارد'},
+ {id:'dip_horn',loc:'horn',n:'رفقة المحاربين',d:'أهل القرن يحترمون من يقاتل معهم.',sk:'war',cost:{gold:15},dur:1,ok:()=>({horn:12}),no:()=>({horn:3}),okT:'شُرب نخب أرْوَند في الجبال',noT:'لم يُترك أثر'},
+ {id:'dip_moon',loc:'moon',n:'التأمّل مع الكهنة',d:'الرهبنة تقدّر من يفهم السحر.',sk:'magic',cost:{gold:15},dur:1,ok:()=>({moon:12}),no:()=>({moon:3}),okT:'أسيل تذكرك في صلواتها',noT:'صمتٌ مهذّب'},
+ {id:'scout',loc:'ash',n:'استطلاع جيش بهرام',d:'معرفة عدد العدو تفتح خطة الكمين.',sk:'wild',dur:1,risk:1,cond:()=>!F('scouted'),ok:()=>({set:['scouted']}),no:()=>({}),okT:'جيش بهرام صار مكشوفًا',noT:'طاردتهم دوريات الرماد'},
+ {id:'sabotage',loc:'ash',n:'إحراق مؤن العدو',d:'ينقص جيش بهرام ثلاثين (مرتان كحد أقصى).',sk:'shadow',dur:2,risk:2,cond:()=>S.sabotage<2&&S.week>=4,ok:()=>{S.sabotage++;return{enemy:-30}},no:()=>({}),okT:'احترقت مخازن بهرام',noT:'كُشف المتسلّل وهرب بصعوبة'},
+ {id:'ashsecret',loc:'ash',n:'سرّ الأرض الميتة',d:'ما الذي يقتل أرض الرماد؟',sk:'magic',dur:2,risk:1,cond:()=>F('ashhint')&&!F('ashsecret'),ok:()=>({set:['ashsecret']}),no:()=>({}),okT:'اكتُشف أن ينابيع الشرق تسمّمت بالملح، وأن بهرام يغزو ليُطعم شعبه',noT:'عاصفة رماد أعادت الباحث'},
+];
+
 /* ---- data/events.js ---- */
 /* ===== DATA: court events =====
    who: character key · w:[from,to] weeks · story: scheduled · pool: random filler · cond: when it can appear
@@ -1135,6 +1157,71 @@ Object.assign(EXPR,{
  levies:['smug',['smug','neutral','angry']],stables:['shock',['happy','neutral','neutral']],anthem:['happy',['happy','sad']],torches:['shock',['happy','happy','neutral']],
 });
 
+/* ---- data/events_people.js ---- */
+/* ===== DATA: advisors — hiring and personal quests ===== */
+/* hiring: Daniel (craft) through the inventor, Qasim (trade) through the grain merchant */
+E.tinker.story=1;E.tinker.w=[4,4];delete E.tinker.pool;
+E.tinker.opts.unshift({t:'ابقَ في القصر مهندسًا للبلاط',cost:{gold:30},e:{unlock:'daniel',set:['crossbows']},r:'صار للمجلس مهندس. دانيال سيصنع الأقواس الآلية، ويبني لك ما تطلبه من آلات.'});
+EXPR.tinker[1].unshift('happy');
+E.grain.story=1;E.grain.w=[6,6];delete E.grain.pool;
+E.grain.opts.unshift({t:'ابقَ معي أمينًا للخزانة',cost:{gold:20},e:{unlock:'qasim',food:20},r:'وافق قاسم بشرط واحد: أن يُسمح له بمساومة الجميع، حتى الملك.'});
+EXPR.grain[1].unshift('happy');
+
+Object.assign(E,{
+/* Ghazi: his son is missing at the border */
+ghazison:{who:'ghazi',story:1,w:[5,5],key:1,text:'مولاي… ابني صقر لم يعد من دورية عند حدود الرماد منذ ثلاثة أيام. لا أطلب شيئًا للقائد. أطلب للأب.',opts:[
+ {t:'سنجده. افتحوا مهمة البحث',e:{set:['saqrquest']},r:'على الخريطة الآن مهمة في أرض الرماد: «البحث عن صقر». رعد أقدر من يجده.'},
+ {t:'الحرب لا تنتظر أحدًا يا غازي',e:{retmod:['ghazi',-.1],set:['ghazigrief']},r:'انحنى غازي ولم يقل شيئًا. لكنه لم يعد كما كان.'},
+]},
+saqrback:{who:'saqr',w:[1,12],key:1,text:'أنا صقر بن غازي. أسرني رجال بهرام وأطلقني رعد من أقفاصهم. أبي يقول إن حياتي دَين عليه لك. وأنا أقول إنها دَين عليّ أنا.',opts:[
+ {t:'قُد عشرة رجال تحت إمرة أبيك',e:{soldiers:10,hap:2},r:'وقف صقر إلى جانب أبيه. غازي يبتسم لأول مرة منذ أسابيع.'},
+ {t:'ارجع إلى أمك، فقد قاتلت بما يكفي',e:{hap:3,retmod:['ghazi',.05]},r:'قبّل صقر يد أبيه ومضى. غازي لن ينسى رحمتك.'},
+]},
+/* Raad: revenge on the wolves gang */
+raadhome:{who:'raad',story:1,w:[4,4],key:1,text:'عصابة الذئاب أحرقت بيت أختي في الغابة يا مولاي. أعرف أين ينامون. أعطني الإذن وعشرة رجال، ولن يعودوا يحرقون أحدًا.',opts:[
+ {t:'لك الإذن والرجال',e:{set:['raadquest']},r:'على الخريطة الآن في الغابة السوداء: «ثأر رعد». مهمة لرعد وحده.'},
+ {t:'ليس الآن، نحتاجك للصيد',e:{retmod:['raad',-.05]},r:'شدّ رعد وتر قوسه حتى صرّ، وخرج.'},
+]},
+/* Samar: the Moon order wants her tried */
+samartrial:{who:'asil',story:1,w:[6,6],cond:()=>S.ret.samar.on,key:1,text:'عرّافتك سمر تعلّمت سحرها من كتب سُرقت من معبدنا قبل عشرين عامًا. الرهبنة تطالب بمحاكمتها. لن أطلب رأسها، لكن العدل عدل.',opts:[
+ {t:'سمر تحت حمايتي',e:{moon:-15,retmod:['samar',.1],set:['samarloyal']},r:'غضبت أسيل. لكن سمر عرفت في تلك اللحظة لمن ولاؤها.'},
+ {t:'لتصالحكم سمر بنفسها',e:{set:['samarquest']},r:'على الخريطة الآن عند معبد القمر: «مصالحة سمر». مهمة لها وحدها.'},
+ {t:'خذوها، العدل عدل',e:{moon:20,lose:'samar',hap:-3},r:'سيقت سمر إلى المعبد. المجلس صار أفقر بعرّافة.'},
+]},
+/* Nawal: her past with Rustam */
+nawalpast:{who:'nawal',story:1,w:[7,7],cond:()=>S.ret.nawal.on,key:1,text:'يجب أن تعرف شيئًا قبل أن تعرفه من غيري: قبل أن آتيك، كنتُ أعمل لأخيك رستم. تركته حين فهمت ما يريد. صدّقني أو اطردني.',opts:[
+ {t:'أصدّقك. أخبريني بما تعرفين',e:{clues:1,retmod:['nawal',.05],set:['nawaltrust']},r:'رسمت لك نوال شبكة رجال رستم: من يحمل رسائله، ومن يدفع لهم.'},
+ {t:'سأختبرك أولًا',e:{set:['nawalquest']},r:'على الخريطة الآن في القلعة: «اختبار نوال». ستأتيك بدليل من داخل البرج، أو تسقط.'},
+ {t:'اخرجي من قصري',e:{lose:'nawal'},r:'لم تجادل. حين التفتّ كانت قد اختفت، كما جاءت أول مرة.'},
+]},
+/* Daniel: iron for siege engines */
+danieliron:{who:'daniel',story:1,w:[6,9],cond:()=>S.ret.daniel.on&&!F('catapults'),key:1,text:'أستطيع أن أبني منجنيقين يرميان الحجارة على من يقترب من الأسوار. لكن الحديد في السوق رديء. حديد جبال القرن هو ما أحتاجه.',opts:[
+ {t:'اشترِ الحديد من السوق بخمسين',cost:{gold:50},e:{set:['catapults']},r:'منجنيقان على الأسوار: +٣٠ يوم الحصار.'},
+ {t:'اذهب إلى الجبال بنفسك',e:{set:['danielquest']},r:'على الخريطة الآن في جبال القرن: «حديد القرن». مهمة لدانيال.'},
+ {t:'الأسوار تكفي',e:{},r:'هزّ دانيال رأسه وعاد إلى ورشته.'},
+]},
+/* Qasim: an old debt */
+qasimdebt:{who:'qasim',story:1,w:[7,10],cond:()=>S.ret.qasim.on,key:1,text:'جلالتك، تجار النهر يطالبونني بدَين قديم: أربعون قطعة. إن لم أدفع سيقولون في المرفأ إن أمين خزانة الملك مفلس، وهذا يضرّك قبل أن يضرّني.',opts:[
+ {t:'الخزانة تدفع عنك',cost:{gold:40},e:{river:10,retmod:['qasim',.1]},r:'دفعتَ الدَّين. قاسم سيعيده إليك أضعافًا، كما يقسم.'},
+ {t:'اذهب وسوِّه بنفسك',e:{set:['qasimquest']},r:'على الخريطة الآن عند مرفأ النهر: «تسوية دَين قاسم».'},
+ {t:'ديونك شأنك',e:{retmod:['qasim',-.1],river:-5},r:'خرج قاسم وهو يحسب شيئًا في رأسه.'},
+]},
+});
+Object.assign(EXPR,{ghazison:['sad',['happy','sad']],saqrback:['happy',['happy','happy']],raadhome:['angry',['happy','angry']],
+ samartrial:['cold',['angry','neutral','smug']],nawalpast:['tired',['happy','cold','sad']],danieliron:['neutral',['happy','happy','sad']],qasimdebt:['tired',['happy','neutral','sad']]});
+
+/* missions for new advisors and personal quests */
+M.push(
+ {id:'findsaqr',loc:'ash',n:'البحث عن صقر',d:'ابن غازي أسير في معسكرات الرماد.',sk:'wild',dur:1,risk:1,personal:1,cond:()=>F('saqrquest')&&!F('saqrsaved')&&!F('saqrlost'),ok:()=>({set:['saqrsaved'],retmod:['ghazi',.1],follow:['saqrback',1]}),no:()=>({}),okT:'عاد صقر حيًّا',noT:'لم يُعثر على أثر'},
+ {id:'raadrevenge',loc:'forest',n:'ثأر رعد',d:'رعد يعرف أين ينام الذئاب.',sk:'wild',dur:1,risk:2,personal:1,only:'raad',cond:()=>F('raadquest')&&!F('raaddone'),ok:()=>({set:['raaddone','banditsdone'],hap:4,retmod:['raad',.1],item:'ivoryhorn'}),no:()=>({}),okT:'انتهت عصابة الذئاب، وعاد رعد ببوق زعيمها',noT:'هرب الذئاب إلى عمق الغابة'},
+ {id:'reconcile',loc:'moon',n:'مصالحة سمر',d:'سمر تواجه الرهبنة بنفسها.',sk:'magic',dur:1,personal:1,only:'samar',cond:()=>F('samarquest')&&!F('samardone'),ok:()=>({set:['samardone'],moon:15,retmod:['samar',.1],item:'moonscroll'}),no:()=>({moon:-10,set:['samardone']}),okT:'صالحت سمر الرهبنة، وأهدتها أسيل مخطوطة',noT:'انتهى اللقاء بالصراخ'},
+ {id:'nawaltest',loc:'castle',n:'اختبار نوال',d:'دليل من داخل البرج الشرقي.',sk:'shadow',dur:1,risk:1,personal:1,only:'nawal',cond:()=>F('nawalquest')&&!F('nawaldone'),ok:()=>({set:['nawaldone','nawaltrust'],clues:2,retmod:['nawal',.1]}),no:()=>({set:['nawaldone'],hap:-2}),okT:'عادت برسالتين بختم الأسد',noT:'كاد رجال البرج يمسكونها'},
+ {id:'horniron',loc:'horn',n:'حديد القرن',d:'دانيال يفاوض الحدادين في الجبال.',sk:'craft',dur:2,personal:1,only:'daniel',cond:()=>F('danielquest')&&!F('catapults'),ok:()=>({set:['catapults'],horn:6}),no:()=>({gold:-10}),okT:'عاد دانيال بالحديد وبُني المنجنيقان',noT:'الحديد غالٍ، وعاد بنصفه'},
+ {id:'settledebt',loc:'river',n:'تسوية دَين قاسم',d:'قاسم يساوم دائنيه.',sk:'trade',dur:1,personal:1,only:'qasim',cond:()=>F('qasimquest')&&!F('qasimdone'),ok:()=>({set:['qasimdone'],river:12,gold:20,retmod:['qasim',.1]}),no:()=>({set:['qasimdone'],river:-8}),okT:'سوّى قاسم الدَّين وربح فوقه',noT:'خسر المساومة هذه المرة'},
+ {id:'caravan',loc:'river',n:'قافلة تجارية',d:'بيع فائض الحِرف في أسواق النهر.',sk:'trade',cost:{gold:20},dur:1,ok:()=>({gold:45}),no:()=>({gold:12}),okT:'ربحت القافلة',noT:'سوق كاسدة'},
+ {id:'workshop',loc:'castle',n:'ورشة السلاح',d:'سيوف ورماح جديدة للجيش.',sk:'craft',cost:{gold:25},dur:1,ok:()=>({arms:2}),no:()=>({arms:1}),okT:'صُنعت دفعتان من السلاح',noT:'دفعة واحدة فقط'},
+);
+
 /* ---- data/items.js ---- */
 /* ===== DATA: royal treasury items =====
    Each item can be used once: give to a faction or advisor, or sell. */
@@ -1142,28 +1229,12 @@ Object.assign(ITEMS,{
  passmap:{n:'خريطة الممرّات',d:'رسمها فارٌّ من جيش بهرام: الطرق الجبلية التي سيأتي منها.',uses:[
   {t:'أعطها لرعد',e:{set:['scouted'],retmod:['raad',.1]}},{t:'بِعها لبني النهر',e:{gold:30,river:5}}]},
 });
-
-/* ---- data/missions.js ---- */
-/* ===== DATA: map locations and missions ===== */
-const LOC={
- castle:{n:'القلعة',x:150,y:105},village:{n:'قرية الطاحونة',x:92,y:138},forest:{n:'الغابة السوداء',x:205,y:158},
- river:{n:'مرفأ بني النهر',x:52,y:74},horn:{n:'جبال القرن',x:132,y:30},moon:{n:'معبد القمر',x:38,y:168},ash:{n:'أرض الرماد',x:280,y:84},
-};
-const M=[
- {id:'train',loc:'castle',n:'تدريب المجنّدين',d:'تحويل فلاحين إلى رماحين.',sk:'war',cost:{gold:20},dur:1,ok:()=>({soldiers:15}),no:()=>({soldiers:5}),okT:'تخرّج خمسة عشر رماحًا',noT:'صمد خمسة فقط حتى النهاية'},
- {id:'fortify',loc:'castle',n:'ترميم الأسوار',d:'كل مستوى يضيف ثلاثين يوم الحصار (الحد ٣).',sk:'war',cost:{gold:50},dur:2,cond:()=>S.fort<3,ok:()=>({fort:1}),no:()=>({gold:20}),okT:'ارتفعت الأسوار طبقة',noT:'انهار جزء من الحائط، واستُرجع بعض المال'},
- {id:'whispers',loc:'castle',n:'تتبّع الهمسات',d:'من يكتب إلى الشرق ليلًا؟',sk:'shadow',dur:1,cond:()=>S.ret.nawal.on&&!F('exposed'),ok:()=>({clues:1}),no:()=>({}),okT:'وُجد دليل جديد على الخائن',noT:'الأثر برد قبل أن يُلتقط'},
- {id:'hunt',loc:'forest',n:'رحلة صيد',d:'لحمٌ للمخازن.',sk:'wild',dur:1,ok:()=>({food:22}),no:()=>({food:6}),okT:'عادت العربة محمّلة',noT:'صيدٌ شحيح'},
- {id:'wolves',loc:'forest',n:'مطاردة عصابة الذئاب',d:'العصابة ما زالت تنهب القرى.',sk:'war',dur:1,risk:2,cond:()=>F('bandits')&&!F('banditsdone'),ok:()=>({hap:6,food:15,set:['banditsdone']}),no:()=>({}),okT:'تشتّتت العصابة واستُعيد القمح',noT:'أفلت الذئاب'},
- {id:'aid',loc:'village',n:'العمل مع القرويين',d:'إصلاح السواقي والبيوت.',sk:'talk',dur:1,ok:()=>({hap:6}),no:()=>({hap:2}),okT:'القرية تشكر التاج',noT:'عمل قليل وكلام كثير'},
- {id:'cure',loc:'village',n:'إيقاف الحمّى',d:'الحمّى تنتشر بين البيوت.',sk:'magic',dur:1,cond:()=>F('plague')&&!F('cured'),ok:()=>({hap:8,set:['cured']}),no:()=>({pop:-8}),okT:'انحسرت الحمّى',noT:'الحمّى أقوى من الأعشاب هذه المرة'},
- {id:'dip_river',loc:'river',n:'سفارة إلى بني النهر',d:'هدايا وكلام طيّب.',sk:'talk',cost:{gold:15},dur:1,ok:()=>({river:12}),no:()=>({river:3}),okT:'مِهران راضٍ',noT:'استقبالٌ بارد'},
- {id:'dip_horn',loc:'horn',n:'رفقة المحاربين',d:'أهل القرن يحترمون من يقاتل معهم.',sk:'war',cost:{gold:15},dur:1,ok:()=>({horn:12}),no:()=>({horn:3}),okT:'شُرب نخب أرْوَند في الجبال',noT:'لم يُترك أثر'},
- {id:'dip_moon',loc:'moon',n:'التأمّل مع الكهنة',d:'الرهبنة تقدّر من يفهم السحر.',sk:'magic',cost:{gold:15},dur:1,ok:()=>({moon:12}),no:()=>({moon:3}),okT:'أسيل تذكرك في صلواتها',noT:'صمتٌ مهذّب'},
- {id:'scout',loc:'ash',n:'استطلاع جيش بهرام',d:'معرفة عدد العدو تفتح خطة الكمين.',sk:'wild',dur:1,risk:1,cond:()=>!F('scouted'),ok:()=>({set:['scouted']}),no:()=>({}),okT:'جيش بهرام صار مكشوفًا',noT:'طاردتهم دوريات الرماد'},
- {id:'sabotage',loc:'ash',n:'إحراق مؤن العدو',d:'ينقص جيش بهرام ثلاثين (مرتان كحد أقصى).',sk:'shadow',dur:2,risk:2,cond:()=>S.sabotage<2&&S.week>=4,ok:()=>{S.sabotage++;return{enemy:-30}},no:()=>({}),okT:'احترقت مخازن بهرام',noT:'كُشف المتسلّل وهرب بصعوبة'},
- {id:'ashsecret',loc:'ash',n:'سرّ الأرض الميتة',d:'ما الذي يقتل أرض الرماد؟',sk:'magic',dur:2,risk:1,cond:()=>F('ashhint')&&!F('ashsecret'),ok:()=>({set:['ashsecret']}),no:()=>({}),okT:'اكتُشف أن ينابيع الشرق تسمّمت بالملح، وأن بهرام يغزو ليُطعم شعبه',noT:'عاصفة رماد أعادت الباحث'},
-];
+Object.assign(ITEMS,{
+ ivoryhorn:{n:'بوق زعيم الذئاب',d:'بوق صيد من العاج، أخذه رعد من زعيم العصابة.',uses:[
+  {t:'أعطه لرعد',e:{retmod:['raad',.1]}},{t:'أهده لأهل القرن',e:{horn:12}},{t:'بِعه',e:{gold:35}}]},
+ moonscroll:{n:'مخطوطة القمر',d:'هدية أسيل بعد المصالحة: شروح قديمة في السحر.',uses:[
+  {t:'أعطها لسمر',e:{retmod:['samar',.1]}},{t:'أعدها للمعبد تكريمًا',e:{moon:15}},{t:'بِعها لتاجر كتب',e:{gold:40,moon:-8}}]},
+});
 
 /* ---- data/endings.js ---- */
 /* ===== DATA: endings ===== */
@@ -1586,6 +1657,15 @@ function endWeek(){
 myPower.extra.push(parts=>{
  if(F('arrows'))parts.push(['عشرة آلاف سهم',20]);else if(F('halfarrows'))parts.push(['خمسة آلاف سهم',10]);
  if(F('oil'))parts.push(['قدور الزيت المغلي',25]);
+});
+
+myPower.extra.push(parts=>{
+ if(F('catapults'))parts.push(['منجنيقا دانيال',30]);
+ if(S.arms)parts.push(['مخزون السلاح ('+A(S.arms)+')',S.arms*6]);
+ });
+/* advisors' personal quests left too long */
+HOOK.weekEnd.push(()=>{
+ if(F('saqrquest')&&!F('saqrsaved')&&!F('saqrlost')&&S.week>=9){S.flags.saqrlost=1;S.ret.ghazi.mod-=.1;return 'لم يُعثر على صقر بن غازي. القائد يقاتل الآن بقلب مكسور (−١٠٪).'}
 });
 
 /* ---- engine/ending.js ---- */

@@ -6,7 +6,7 @@ import os
 R=os.path.dirname(os.path.abspath(__file__))
 S=lambda p:open(os.path.join(R,'src',p),encoding='utf-8').read()
 ORDER=['engine/util.js','engine/sprites.js','engine/sprites3.js','data/characters.js','engine/core.js',
- 'data/events.js','data/events_ch3.js','data/events_people.js','data/letters.js','data/items.js','data/missions.js','data/endings.js',
+ 'data/missions.js','data/events.js','data/events_ch3.js','data/events_people.js','data/events_family.js','data/letters.js','data/items.js','data/decrees.js','data/endings.js',
  'engine/audio.js','engine/hall3.js','engine/scene.js','engine/map.js','engine/ui.js','engine/court.js','engine/council.js','engine/report.js',
  'engine/systems.js','engine/advice.js','engine/siege.js','engine/music.js','engine/meta.js','engine/ending.js']
 js='\n'.join(f'/* ---- {p} ---- */\n'+S(p) for p in ORDER if os.path.exists(os.path.join(R,'src',p)))
