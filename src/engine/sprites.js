@@ -272,7 +272,7 @@ function body34(c,frame,expr){
  g.col(15,fy+1,sk[3]);
  return{g,mats}}
 
-return{portrait,body,body34,bodySide,render,ramp};
+return{portrait,body,body34,bodySide,render,ramp,Grid,tone};
 })();
 
 /* cached access by character key */
