@@ -52,7 +52,7 @@ HOOK.optionsExtra.push((id,opts)=>{const ev=E[id];if(!ev.lie)return;
 HOOK.afterChoice.push((id,o)=>{const ev=E[id];
  if(o.check){S.checked[id]=S.lies[id]?'lie':'true';S.usedW.nawal=1;return}
  if(ev.lie&&S.lies[id]&&!S.checked[id]&&ev.lie.trust.includes(o._i)){S.stats.lies++;(S.pendingLies=S.pendingLies||[]).push(id);return{eff:ev.lie.instead||{}}}});
-HOOK.weekEnd.push(()=>{if(!S.pendingLies||!S.pendingLies.length)return;const lines=S.pendingLies.map(id=>{apply(LIES[id].e);return'كذبة انكشفت: '+LIES[id].later});S.pendingLies=[];return lines.join(' ')});
+HOOK.weekEnd.push(()=>{if(!S.pendingLies||!S.pendingLies.length)return;const lines=S.pendingLies.map(id=>{const L=E[id].lie;apply(L.e);return'كذبة انكشفت: '+L.later});S.pendingLies=[];return lines.join(' ')});
 /* checking replaces the normal choose flow */
 const _choose=choose;
 choose=function(id,i){const o=curOpts[i];if(o&&o.check&&!optState(o,id)){sfx('quill');S.checked[id]=S.lies[id]?'lie':'true';S.usedW.nawal=1;

@@ -743,7 +743,7 @@ const run=(h,...a)=>HOOK[h].flatMap(f=>{const r=f(...a);return r==null?[]:[r]});
 function retState(k){const r=S.ret[k];if(!r||!r.on)return'غائب';if(r.inj>S.week)return'مصاب';if(S.missions.find(m=>m.ret===k))return'في مهمة';if(S.usedW[k])return'مشغول اليوم';return'متاح'}
 const avail=k=>retState(k)==='متاح';
 const inCastle=k=>{const s=retState(k);return s==='متاح'||s==='مشغول اليوم'};
-function chance(m,k){let p=.3+(RET[k].sk[m.sk]||0)*.2+(S.ret[k].mod||0);if(k==='nawal'&&F('thiefagent'))p+=.1;if(S.decree==='curfew'&&m.sk==='shadow')p+=.1;return clamp(p,.1,.95)}
+function chance(m,k){let p=.3+(RET[k].sk[m.sk]||0)*.2+(S.ret[k].mod||0);if(k==='nawal'&&F('thiefagent'))p+=.1;if(S.decree==='curfew'&&m.sk==='shadow')p+=.1;if(F('engbook')&&m.id==='fortify')p+=.15;return clamp(p,.1,.95)}
 
 const TAX=[{n:'منخفضة',m:.6,h:3},{n:'عادية',m:1,h:0},{n:'مرتفعة',m:1.5,h:-6}];
 function econ(){
@@ -901,7 +901,7 @@ lina2:{who:'lina',w:[5,5],story:1,cond:()=>!F('betrothed'),text:'أبي، لا �
 spy:{who:'guard',w:[6,6],story:1,text:'مولاي، أمسكنا هذا الرجل عند البوابة الشرقية. كان يحمل رسالة أحرق نصفها، لكنّ الختم بقي واضحًا: أسدٌ متوّج.',opts:[
  {t:'استجوبوه حتى يتكلّم',e:{clues:1,hap:-2},r:'اعترف بأن الرسالة متجهة إلى معسكر بهرام. لم يعرف اسم المرسِل، لكنه وصف خاتمًا بأسد.'},
  {t:'أطلقوه، وستتبعه نوال',req:'nawal',e:{clues:2},r:'قاد الرجلُ نوالَ إلى نُزُلٍ قرب البرج الشرقي، حيث كان رجال رستم ينتظرونه.'},
- {t:'اطردوه خارج الحدود علنًا',e:{hap:4},r:'تفرّج الناس عليه يُطرد. الرسالة احترقت كاملة في الموقد.'},
+ {t:'اطردوه خارج الحدود علنًا',e:{hap:4},r:'تفرّج الناس عليه وهو يُطرد. الرسالة احترقت كاملة في الموقد.'},
 ]},
 prisoner:{who:'jailer',w:[6,6],story:1,cond:()=>F('jailed'),text:'رسول بهرام في القبو يطلب أن يرى الملك. يقول إن عنده ما يستحق الاستماع.',opts:[
  {t:'أحضروه. سأسمع',e:{clues:1,set:['scouted']},r:'قال الرسول: «دمٌ ملكيّ سيفتح لكم البوابة من الداخل». ثم وصف جيش بهرام بدقة جندي متقاعد.'},
@@ -947,7 +947,7 @@ rustam3:{who:'rustam',w:[10,10],story:1,cond:()=>!F('exposed'),text:'أخي، د
  {t:'واجهه بكل ما تعرف',need:()=>S.clues>=3,hint:'يتطلب ثلاثة أدلة',e:{set:['exposed'],hap:6},r:'الرسائل، الخاتم، شهادة الشهود. انهار رستم أمام البلاط كله. الخائن في القيد.'},
 ]},
 horncall:{who:'burhan',w:[10,10],story:1,text:()=>S.rel.horn>=70?'الجبال جاهزة يا ملك. ثمانون رجلًا يشحذون فؤوسهم. قل لي فقط متى.':'رجالي يسألون: لماذا نموت من أجل ملك الوادي؟ أعطني سببًا يا سالار.',opts:[
- {t:'أرسلوا لهم مئونة الشتاء',cost:{food:30},e:{horn:20},r:'الجبال تأكل من خبزك الآن.'},
+ {t:'أرسلوا لهم مؤونة الشتاء',cost:{food:30},e:{horn:20},r:'الجبال تأكل من خبزك الآن.'},
  {t:'ثمانون قطعة ذهب لسلاحهم',cost:{gold:80},e:{horn:25},r:'الحديد لغة يفهمها أهل القرن.'},
  {t:'شرفهم يكفي سببًا',e:{horn:-5},r:'ضحك برهان ضحكة قصيرة لا فرح فيها.'},
 ]},
@@ -1177,10 +1177,10 @@ EXPR.grain[1].unshift('happy');
 Object.assign(E,{
 /* Ghazi: his son is missing at the border */
 ghazison:{who:'ghazi',story:1,w:[5,5],key:1,text:'مولاي… ابني صقر لم يعد من دورية عند حدود الرماد منذ ثلاثة أيام. لا أطلب شيئًا للقائد. أطلب للأب.',opts:[
- {t:'سنجده. افتحوا مهمة البحث',e:{set:['saqrquest']},r:'على الخريطة الآن مهمة في أرض الرماد: «البحث عن صقر». رعد أقدر من يجده.'},
+ {t:'سنجده. افتحوا مهمة البحث',e:{set:['saqrquest']},r:'على الخريطة الآن مهمة في أرض الرماد: «البحث عن صقر». رعد أقدر من يجده، لكن أي مستشار يستطيع المحاولة.'},
  {t:'الحرب لا تنتظر أحدًا يا غازي',e:{retmod:['ghazi',-.1],set:['ghazigrief']},r:'انحنى غازي ولم يقل شيئًا. لكنه لم يعد كما كان.'},
 ]},
-saqrback:{who:'saqr',w:[1,12],key:1,text:'أنا صقر بن غازي. أسرني رجال بهرام وأطلقني رعد من أقفاصهم. أبي يقول إن حياتي دَين عليه لك. وأنا أقول إنها دَين عليّ أنا.',opts:[
+saqrback:{who:'saqr',w:[1,12],key:1,text:'أنا صقر بن غازي. أسرني رجال بهرام، وأطلقني رجالك من أقفاصهم. أبي يقول إن حياتي دَين عليه لك. وأنا أقول إنها دَين عليّ أنا.',opts:[
  {t:'قُد عشرة رجال تحت إمرة أبيك',e:{soldiers:10,hap:2},r:'وقف صقر إلى جانب أبيه. غازي يبتسم لأول مرة منذ أسابيع.'},
  {t:'ارجع إلى أمك، فقد قاتلت بما يكفي',e:{hap:3,retmod:['ghazi',.05]},r:'قبّل صقر يد أبيه ومضى. غازي لن ينسى رحمتك.'},
 ]},
@@ -1249,6 +1249,83 @@ ziyad3:{who:'ziyad',story:1,w:[10,10],key:1,text:'أبي، كل الرجال س�
 ]},
 });
 Object.assign(EXPR,{ziyad1:['happy',['happy','neutral','happy']],ziyad2:['sad',['sad','tired','smug']],ziyad3:['fierce',['happy','neutral','sad']]});
+
+/* ---- data/events_extra.js ---- */
+/* ===== DATA: extra pool cases — more variety between playthroughs (each game sees a subset) ===== */
+Object.assign(C,{
+ scholar:{skin:'#e7b993',hair:'#888888',hs:1,robe:'#2a4a5a',trim:'#c9a24a',hat:'turban',hatc:'#e8e0d0',beard:'#aaaaaa',item:'scroll'},
+ veteran:{skin:'#b97f55',hair:'#999999',hs:1,robe:'#5a3a2a',trim:'#a7a9ad',hat:null,beard:'#aaaaaa',item:'spear',armor:1},
+ charlatan:{skin:'#e0ad83',hair:'#1a1a1a',hs:2,robe:'#6a1a6a',trim:'#e3b54e',hat:'turban',hatc:'#3a2a6a',beard:'#1a1a1a',item:'staff',itemc:'#ffd27a'},
+ eastmerchant:{skin:'#bfa898',hair:'#333333',hs:1,robe:'#6a5a4a',trim:'#c4552b',hat:'turban',hatc:'#8a7a6a',beard:'#333333',item:'scroll'},
+ poet:{skin:'#e0ad83',hair:'#4a2a1a',hs:2,robe:'#3a5a3a',trim:'#d8c27a',hat:'cap',hatc:'#2a3a2a',eye:'#3a5a2a'},
+});
+Object.assign(N,{scholar:['العالِم ابن رُشيد','رحّالة يحمل الكتب'],veteran:['العمّ جسّاس','جنديّ قديم بساق عرجاء'],charlatan:['المبارك سهيل','يدّعي استنزال المطر'],
+ eastmerchant:['التاجر زُهير','تاجر جاء من طرق الشرق'],poet:['الشاعر وَرد','شاعر الأسواق']});
+Object.assign(E,{
+locusts:{who:'farmer',pool:1,w:[4,9],text:'سحابة جراد على حدود الحقول يا مولاي. إن وصلت فلن تترك سنبلة. الرجال يريدون أن يعرفوا: نحرق أطراف الحقول، أم ننتظر رحمة الريح؟',opts:[
+ {t:'سمر، دخان أعشابك يطردها',req:'samar',e:{hap:3},r:'غطّى دخان سمر الحقول ثلاثة أيام. انحرف الجراد شرقًا، إلى أرض الرماد.'},
+ {t:'احرقوا أطراف الحقول',e:{food:-10},r:'خسرتَ بعض القمح، لكن الجراد لم يجد ما يأكله.'},
+ {t:'ننتظر رحمة الريح',e:{},r:'لم تأتِ الريح.',ch:{p:.4,ok:{e:{hap:2},r:'هبّت الريح من الغرب. ابتعد الجراد كأنه لم يكن.'},no:{e:{food:-30,hap:-4},r:'أكل الجراد ثلث الحصاد في ليلة واحدة.'}}},
+]},
+scholar:{who:'scholar',pool:1,w:[3,9],text:'جئتُ من مكتبات الجنوب بكتاب في هندسة الأسوار، كُتب قبل ثلاثمئة عام. أبيعه لمن يقدّره: خمس وعشرون قطعة.',opts:[
+ {t:'نشتريه للمهندسين',cost:{gold:25},e:{set:['engbook']},r:'مهمة «ترميم الأسوار» صارت أنجح بخمسة عشر بالمئة.'},
+ {t:'ابقَ ضيفًا، وعلّم الأمير زياد',cost:{gold:15},e:{son:{wis:1},hap:1},r:'قضى ابن رشيد أسبوعًا مع زياد، وترك له الكتاب هدية.'},
+ {t:'لا وقت للكتب',e:{},r:'حمل كتابه ومضى غربًا.'},
+]},
+veteran:{who:'veteran',pool:1,w:[3,10],text:'قاتلتُ مع أبيك يا مولاي، قبل أن تأخذ الحرب ساقي. لا أطلب مالًا. أعطني عشرين مجنّدًا وساحة، وسأعلّمهم ما لا تعلّمه الكتب.',opts:[
+ {t:'الساحة لك',e:{soldiers:5,morale:3},r:'صار المجنّدون يمشون كجنود. وجسّاس يصرخ فيهم بفرح.'},
+ {t:'بل خذ راتبًا يليق بك',cost:{gold:15},e:{hap:3},r:'بكى العجوز، وقال إن أباك كان سيفعل الشيء نفسه.'},
+ {t:'زمنك مضى يا عمّ',e:{hap:-2},r:'عرج جسّاس خارج القاعة. الحرس أطرقوا رؤوسهم.'},
+]},
+rainmaker:{who:'charlatan',pool:1,w:[3,8],cond:()=>!F('wells'),text:'أنا المبارك سهيل. أعرف دعاءً يستنزل المطر في ثلاثة أيام. خمسون قطعة ذهب فقط، والسماء تفعل الباقي.',opts:[
+ {t:'خذ الخمسين وادعُ',cost:{gold:50},e:{hap:2},r:'وقف سهيل على السور يدعو ثلاثة أيام. الناس متفائلون.'},
+ {t:'ادعُ أولًا، وندفع إن أمطرت',e:{},r:'تلعثم سهيل، ثم تذكّر موعدًا في مدينة أخرى.'},
+ {t:'اطردوه',e:{hap:1},r:'ضحك الحرس وهم يدفعونه إلى البوابة.'},
+]},
+routeseller:{who:'eastmerchant',pool:1,w:[5,10],cond:()=>!F('scouted'),text:'عبرتُ معسكرات بهرام بقافلتي. رأيت أعدادهم وطرقهم. أربعون قطعة ذهب، وأرسم لك ما رأيت.',opts:[
+ {t:'ارسم، وهذه الأربعون',cost:{gold:40},e:{set:['scouted']},r:'رسم زهير خريطة دقيقة لمعسكرات الرماد.'},
+ {t:'كيف أعرف أنك لست جاسوسًا لهم؟',e:{},r:'ابتسم زهير: «لا تعرف». وخرج.'},
+]},
+orphans:{who:'halima',pool:1,w:[5,10],text:'أطفال الجنود الذين ماتوا على الحدود يا مولاي. اثنا عشر طفلًا بلا أب ولا بيت. القرية لا تستطيع إطعامهم وحدها.',opts:[
+ {t:'مطبخ القصر يطعمهم',cost:{food:10},e:{hap:4},r:'صار للأطفال مقاعد في مطبخ القصر. رقيّة تقول إنهم يأكلون أكثر من الحرس.'},
+ {t:'إلى المعبد، وعلى التاج نفقتهم',cost:{gold:15},e:{moon:5,hap:2},r:'الكاهنات فتحن غرفة جديدة.'},
+ {t:'القرية تتكفّل بأطفالها',e:{hap:-3},r:'تفرّق الأطفال على البيوت الفقيرة.'},
+]},
+bridge:{who:'farrukh',pool:1,w:[4,10],text:'جسر الطريق الغربي انهار يا مولاي. قوافلنا تدور يومين حوله. بنو النهر يدفعون نصف التكلفة إن دفعتم النصف الآخر.',opts:[
+ {t:'ثلاثون قطعة نصيبنا',cost:{gold:30},e:{river:8},r:'جسر جديد من حجر، وعليه نقش باسم المملكتين.'},
+ {t:'ليبنوه وحدهم',e:{river:-6},r:'بنوه وحدهم. وكتبوا اسمهم فقط.'},
+]},
+satire:{who:'poet',pool:1,w:[4,10],text:'جلالتك، قصيدتي عن «الملك الذي يعدّ القمح وينسى الناس» يغنّيها السوق كله. جئتُ قبل أن يأتي بي الحرس.',opts:[
+ {t:'اسجنوه',e:{hap:-4},r:'سُجن ورد. صارت القصيدة أشهر.'},
+ {t:'قل لي: أين أخطأت؟',e:{hap:4},r:'تكلّم ورد ساعة. بعضه كان صحيحًا. كتب بعدها قصيدة أخرى، أرحم.'},
+ {t:'اكتب لي قصيدة أفضل',cost:{gold:10},e:{hap:2},r:'كتب ورد قصيدة عن ملك يسمع. الناس ما زالوا يغنّون الأولى.'},
+]},
+feud:{who:'lordling',pool:1,w:[3,9],text:'بيتان من النبلاء يتقاتلان على بئر بين ضيعتيهما. قُتل خادمان. أحدهما يريد مبارزة، والآخر يريد حكمك.',opts:[
+ {t:'البئر للقرية، لا لأحدهما',e:{hap:5},r:'غضب البيتان معًا. القرية رقصت.'},
+ {t:'لتكن المبارزة',e:{hap:-2,gold:10},r:'مات أحدهما. دفع الآخر غرامة الدم للخزينة.'},
+ {t:'نوال تعرف من بدأ',req:'nawal',e:{hap:2,clues:1},r:'البيت الذي بدأ كان يتلقّى ذهبًا من البرج الشرقي.'},
+]},
+sandstorm:{who:'watchman',pool:1,w:[6,10],text:'عاصفة رمل دفنت طريق الجنوب يا مولاي. قوافل القمح عالقة خلفها.',opts:[
+ {t:'الجنود يحفرون الطريق',e:{soldiers:-3,food:15},r:'وصلت القوافل. ثلاثة جنود أصيبوا بالرمل في أعينهم.'},
+ {t:'نستأجر عمّالًا',cost:{gold:20},e:{food:15},r:'وصلت القوافل بعد يومين.'},
+ {t:'ننتظر حتى تهدأ',e:{food:-5},r:'فسد بعض القمح في العربات العالقة.'},
+]},
+lostring:{who:'cook',pool:1,w:[5,10],cond:()=>!F('exposed'),text:'مولاي، وجدتُ هذا في رماد الموقد بعد أن غادر الأمير رستم مائدة العشاء. خاتم صغير، عليه أسد.',opts:[
+ {t:'أعطيه لنوال',need:()=>S.ret.nawal.on,hint:'يتطلب نوال',e:{clues:2},r:'قالت نوال: «هذا ختم الرسائل التي أحرقناها. لم يعد عنده إنكار».'},
+ {t:'احفظيه، ولا تخبري أحدًا',e:{clues:1},r:'خبّأت رقيّة الخاتم في جيب مئزرها.'},
+ {t:'أعيديه إليه، ربما سقط سهوًا',e:{set:['ringback'],enemy:10},r:'شكرها رستم بابتسامة. في الليلة التالية، طُردت رقيّة من المطبخ.'},
+]},
+twins:{who:'mother',pool:1,w:[2,8],text:'وُلد لي توأمان في ليلة الريح، يا مولاي. جدّتي تقول إن من يسمّيه الملك يعيش طويلًا. هل تسمّيهما؟',opts:[
+ {t:'«سالم» و«غانم»',e:{hap:3},r:'انتشر الخبر في السوق: الملك سمّى توأمَي الريح.'},
+ {t:'وهذه عشر قطع لمهديهما',cost:{gold:10},e:{hap:5},r:'دعت لك الأم حتى خرجت من الباب.'},
+]},
+});
+Object.assign(EXPR,{locusts:['shock',['happy','sad','neutral']],scholar:['neutral',['happy','happy','sad']],veteran:['neutral',['happy','happy','sad']],
+ rainmaker:['smug',['smug','shock','shock']],routeseller:['smug',['happy','cold']],orphans:['sad',['happy','happy','sad']],bridge:['neutral',['happy','angry']],
+ satire:['smug',['shock','happy','happy']],feud:['angry',['angry','smug','shock']],sandstorm:['shock',['neutral','neutral','sad']],lostring:['shock',['neutral','neutral','sad']],twins:['happy',['happy','happy']]});
+/* rainmaker always lies; the route seller sometimes does */
+E.rainmaker.lie={p:1,trust:[0],truth:'لا دعاء ولا مطر. سهيل يجمع الذهب من مدينة إلى مدينة.',later:'لم تمطر. واختفى المبارك سهيل ومعه الخمسون.',e:{hap:-3}};
+E.routeseller.lie={p:.35,trust:[0],truth:'زهير لم يقترب من معسكرات بهرام. الخريطة من خياله.',later:'خريطة زهير كانت من خياله. لا معسكرات حيث رسمها.',instead:{},e:{}};
 
 /* ---- data/letters.js ---- */
 /* ===== DATA: morning letters (read before the court opens; at most two a week) =====
@@ -1849,7 +1926,7 @@ HOOK.optionsExtra.push((id,opts)=>{const ev=E[id];if(!ev.lie)return;
 HOOK.afterChoice.push((id,o)=>{const ev=E[id];
  if(o.check){S.checked[id]=S.lies[id]?'lie':'true';S.usedW.nawal=1;return}
  if(ev.lie&&S.lies[id]&&!S.checked[id]&&ev.lie.trust.includes(o._i)){S.stats.lies++;(S.pendingLies=S.pendingLies||[]).push(id);return{eff:ev.lie.instead||{}}}});
-HOOK.weekEnd.push(()=>{if(!S.pendingLies||!S.pendingLies.length)return;const lines=S.pendingLies.map(id=>{apply(LIES[id].e);return'كذبة انكشفت: '+LIES[id].later});S.pendingLies=[];return lines.join(' ')});
+HOOK.weekEnd.push(()=>{if(!S.pendingLies||!S.pendingLies.length)return;const lines=S.pendingLies.map(id=>{const L=E[id].lie;apply(L.e);return'كذبة انكشفت: '+L.later});S.pendingLies=[];return lines.join(' ')});
 /* checking replaces the normal choose flow */
 const _choose=choose;
 choose=function(id,i){const o=curOpts[i];if(o&&o.check&&!optState(o,id)){sfx('quill');S.checked[id]=S.lies[id]?'lie':'true';S.usedW.nawal=1;
@@ -2050,7 +2127,7 @@ function gensLines(k){const L=[],fell=['fall','exile','revolt','stolen'].include
  if(F('cured'))L.push('في قرية الطاحونة نصبٌ صغير لمن نجوا من الحمّى، عليه اسم '+(F('samarloyal')||S.ret.samar.on?'سمر.':'الملك.'));else if(F('plague'))L.push('قبور الحمّى ما زالت خلف الطاحونة، والأمهات يتجنّبن ذلك الطريق.');
  if(F('temple')&&!F('betrayedmoon'))L.push('صار معبد القمر أكبر من القصر، والكاهنات يعالجن الفقراء مجانًا.');if(F('betrayedmoon'))L.push('لا قناديل في الليل بعد اليوم الذي سُلّمت فيه أسيل. الناس يقولون إن القمر لم يعد يرى الوادي.');
  if(F('linatrust'))L.push(F('betrothed')?'تزوّجت لينا من جسّار حين اختارت، لا حين اختير لها، وصارت جسرًا بين الوادي والجبال.':'صارت لينا أشهر سفيرة في الممالك الثلاث، ويُقال إنها أنهت حربين بالكلام.');else if(F('linacold'))L.push('تزوّجت لينا كما أُمرت. لم تزُر القصر بعد ذلك إلا في الجنائز.');
- if(F('saqrsaved'))L.push('صقر بن غازي صار قائد الجيش بعد أبيه، ويبدأ كل حملة بزيارة قبر الرجل الذي أنقذه: رعد.');else if(F('saqrlost'))L.push('لم يُعرف مصير صقر بن غازي. ترك القائد سيفه بعد الحرب ومات وحيدًا.');
+ if(F('saqrsaved'))L.push('صقر بن غازي صار قائد الجيش بعد أبيه، ولا يبدأ حملة قبل أن يمرّ بالأقفاص التي أُخرج منها، ليتذكّر.');else if(F('saqrlost'))L.push('لم يُعرف مصير صقر بن غازي. ترك القائد سيفه بعد الحرب ومات وحيدًا.');
  if(F('exposed'))L.push(F('pardoned')?'رستم عاش ما بقي من عمره حارسًا على البرج الذي خانه، ولم يُسمع له صوت.':'خاتم الأسد معلّق في قاعة العرش، تذكيرًا بأن الخيانة تبدأ من البيت.');else if(F('rustamfell'))L.push('سقط رستم بخنجر نوال على البوابة الشرقية. نوال اختفت بعد الحرب ولم يرها أحد.');
  if(F('bandits')&&!F('banditsdone'))L.push('عادت عصابة الذئاب أقوى، وصارت الغابة السوداء طريقًا لا يسلكه أحد بعد المغيب.');
  if(k==='peace')L.push('الطريق بين الوادي وأرض الرماد صار طريق قوافل. وفي الشرق تمثال لملك غريب يحمل رغيف خبز.');
