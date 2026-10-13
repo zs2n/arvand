@@ -20,7 +20,7 @@ const run=(h,...a)=>HOOK[h].flatMap(f=>{const r=f(...a);return r==null?[]:[r]});
 function retState(k){const r=S.ret[k];if(!r||!r.on)return'غائب';if(r.inj>S.week)return'مصاب';if(S.missions.find(m=>m.ret===k))return'في مهمة';if(S.usedW[k])return'مشغول اليوم';return'متاح'}
 const avail=k=>retState(k)==='متاح';
 const inCastle=k=>{const s=retState(k);return s==='متاح'||s==='مشغول اليوم'};
-function chance(m,k){let p=.3+(RET[k].sk[m.sk]||0)*.2+(S.ret[k].mod||0);if(k==='nawal'&&F('thiefagent'))p+=.1;return clamp(p,.1,.95)}
+function chance(m,k){let p=.3+(RET[k].sk[m.sk]||0)*.2+(S.ret[k].mod||0);if(k==='nawal'&&F('thiefagent'))p+=.1;if(S.decree==='curfew'&&m.sk==='shadow')p+=.1;return clamp(p,.1,.95)}
 
 const TAX=[{n:'منخفضة',m:.6,h:3},{n:'عادية',m:1,h:0},{n:'مرتفعة',m:1.5,h:-6}];
 function econ(){

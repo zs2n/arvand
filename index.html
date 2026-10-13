@@ -743,7 +743,7 @@ const run=(h,...a)=>HOOK[h].flatMap(f=>{const r=f(...a);return r==null?[]:[r]});
 function retState(k){const r=S.ret[k];if(!r||!r.on)return'غائب';if(r.inj>S.week)return'مصاب';if(S.missions.find(m=>m.ret===k))return'في مهمة';if(S.usedW[k])return'مشغول اليوم';return'متاح'}
 const avail=k=>retState(k)==='متاح';
 const inCastle=k=>{const s=retState(k);return s==='متاح'||s==='مشغول اليوم'};
-function chance(m,k){let p=.3+(RET[k].sk[m.sk]||0)*.2+(S.ret[k].mod||0);if(k==='nawal'&&F('thiefagent'))p+=.1;return clamp(p,.1,.95)}
+function chance(m,k){let p=.3+(RET[k].sk[m.sk]||0)*.2+(S.ret[k].mod||0);if(k==='nawal'&&F('thiefagent'))p+=.1;if(S.decree==='curfew'&&m.sk==='shadow')p+=.1;return clamp(p,.1,.95)}
 
 const TAX=[{n:'منخفضة',m:.6,h:3},{n:'عادية',m:1,h:0},{n:'مرتفعة',m:1.5,h:-6}];
 function econ(){
@@ -1222,6 +1222,60 @@ M.push(
  {id:'workshop',loc:'castle',n:'ورشة السلاح',d:'سيوف ورماح جديدة للجيش.',sk:'craft',cost:{gold:25},dur:1,ok:()=>({arms:2}),no:()=>({arms:1}),okT:'صُنعت دفعتان من السلاح',noT:'دفعة واحدة فقط'},
 );
 
+/* ---- data/events_family.js ---- */
+/* ===== DATA: Prince Ziyad grows up (war / wisdom / kindness) ===== */
+Object.assign(E,{
+ziyad1:{who:'ziyad',story:1,w:[2,2],key:1,text:'أبي! غازي يقول إني صغير على السيف، وسمر تريدني أقرأ كتبًا مملّة، ورعد وعدني برحلة صيد. وأنا أريد أن ألعب مع أولاد القرية. ماذا أفعل؟',opts:[
+ {t:'تعلّم السيف مع غازي',e:{son:{war:1}},r:'صار زياد يحمل سيفًا خشبيًا أينما ذهب.'},
+ {t:'اقرأ مع سمر',e:{son:{wis:1}},r:'وجدته سمر نائمًا فوق كتاب النجوم. لكنه أكمله.'},
+ {t:'العب مع أولاد القرية',e:{son:{kind:1},hap:1},r:'عاد زياد مغبرًّا وسعيدًا، ويعرف أسماء نصف أطفال المدينة.'},
+]},
+ziyad2:{who:'ziyad',story:1,w:[8,8],key:1,text:'(السائس منصور يقف خلفه) أبي… ضربتُ ابن السائس لأنه أسقط سرجي في الطين. قال إنني لستُ أفضل منه.',opts:[
+ {t:'اعتذر له أمام الجميع',e:{son:{kind:1},hap:2},r:'اعتذر زياد بصوت مرتجف. ابن السائس صار صديقه بعد أسبوع.'},
+ {t:'ستنظف الإسطبل شهرًا لتفهم',e:{son:{wis:1}},r:'عرف زياد ثقل السرج الذي أسقطه.'},
+ {t:'هو أمير، والسرج سرجه',e:{son:{war:1},hap:-2},r:'ابتسم زياد. السائس لم يبتسم.'},
+]},
+ziyad3:{who:'ziyad',story:1,w:[10,10],key:1,text:'أبي، كل الرجال سيصعدون الأسوار. أنا عمري اثنا عشر عامًا، وأعرف كيف أشدّ القوس. دعني أقاتل معهم.',opts:[
+ {t:'ستقف بجانبي على السور',e:{son:{war:1},morale:8},r:'رأى الجنود الأمير الصغير يصعد السور. صار كل منهم يقاتل عن ابنه.'},
+ {t:'ستقود الأطفال إلى مخبأ آمن',e:{son:{kind:1},hap:2},r:'صار زياد مسؤولًا عن ثلاثين طفلًا. لم يبكِ أمامهم.'},
+ {t:'ابقَ مع سمر في بيت الجرحى',e:{son:{wis:1}},r:'سيتعلّم زياد أن الحرب ليست أغاني.'},
+]},
+});
+Object.assign(EXPR,{ziyad1:['happy',['happy','neutral','happy']],ziyad2:['sad',['sad','tired','smug']],ziyad3:['fierce',['happy','neutral','sad']]});
+
+/* ---- data/letters.js ---- */
+/* ===== DATA: morning letters (read before the court opens; at most two a week) =====
+   from: faction key (river/horn/moon) or character key · w:[from,to] · cond · opts like court events */
+const LETTERS=[
+ {id:'spice',from:'river',w:[3,5],cond:()=>S.rel.river>=45,title:'من اللورد مِهران',text:'سفينة توابل من الجنوب تحتاج مرسى في مدينتكم أسبوعًا. إن سمحتم، فصندوق من حمولتها هديةٌ لخزانتكم.',opts:[
+  {t:'ليرسُ المركب',e:{river:8,item:'spice'},r:'وصل صندوق التوابل إلى الخزنة الملكية.'},{t:'المرسى للحرب لا للتجارة',e:{river:-3},r:'طُويت الرسالة.'}]},
+ {id:'taunt',from:'bahram',w:[4,4],title:'من بهرام الرمادي',text:'سمعتُ أن آبارك تجفّ يا سالار. آبارنا جفّت قبل عشر سنين، ولم يُرسل إلينا أحد كأس ماء. أنا آتٍ لأشرب.',opts:[
+  {t:'ردّ بتحدٍّ يُقرأ في الساحة',e:{hap:3,enemy:5},r:'قرأ المنادي ردّك في السوق، وهتف الناس.'},
+  {t:'لا تردّ',e:{},r:'أُحرقت الرسالة.'},
+  {t:'اكتب له عن الماء والخبز',need:()=>F('ashhint'),hint:'يتطلب معرفة أن أرض الرماد تموت',e:{enemy:-10,set:['softletter']},r:'لم يردّ بهرام. لكنّ رسالته التالية تأخرت أسبوعًا.'}]},
+ {id:'asilpilgrims',from:'moon',w:[5,5],cond:()=>S.rel.moon>=40,title:'من الكاهنة أسيل',text:'قافلة حجاج إلى المعبد تمرّ بالغابة السوداء، والذئاب يتربّصون. خمسة من جنودكم يكفون لحمايتها.',opts:[
+  {t:'أرسلوا خمسة جنود',cost:{soldiers:5},e:{moon:10},r:'وصل الحجاج سالمين.'},{t:'لا جنود لدينا لهذا',e:{moon:-5},r:'وصلت القافلة ناقصة.'}]},
+ {id:'wedding',from:'horn',w:[6,6],cond:()=>F('betrothed'),title:'من الزعيم بُرهان',text:'جسّار يسأل متى العرس. أهل القرن لا يحبّون الانتظار.',opts:[
+  {t:'بعد الحرب',e:{horn:-3},r:'سيصبر برهان، على مضض.'},{t:'الآن: عرسٌ في القصر',cost:{gold:40},e:{horn:18,hap:4,set:['wedding']},r:'ثلاث ليالٍ من الأغاني. لينا ابتسمت أكثر مما توقعت.'}]},
+ {id:'dimabrother',from:'dima',w:[6,7],title:'من أخي الملكة ديما',text:'أختي تقول إنكم في ضيق. عندي عشرون رجلًا مسلّحًا، يكفيهم أربعون قطعة ذهب أجرةً للشهر.',opts:[
+  {t:'أرسلهم',cost:{gold:40},e:{soldiers:20},r:'وصل عشرون رجلًا بشعار بيت الملكة.'},{t:'نشكره، لا حاجة',e:{},r:'ردّت الملكة بنفسها برسالة شكر.'}]},
+ {id:'linaembassy',from:'lina',w:[7,7],cond:()=>F('linatrust')&&!F('betrothed'),title:'من الأميرة لينا',text:'أبي، تعلّمت هنا أن الكلمة الصادقة تفتح أبوابًا لا تفتحها الهدايا. الناس هنا يسألون عنك بخير.',opts:[
+  {t:'أرسل لها شكرًا وفخرًا',e:{river:6,moon:6,hap:2},r:'قرأت لينا ردّك على من حولها.'}]},
+ {id:'warning',from:'unknown',w:[8,8],title:'رسالة بلا توقيع',text:'لا تثق بكل من يبيع البيض عند الفجر. ولا تشرب من بئر السوق.',opts:[
+  {t:'ضاعفوا الحرس على البئر',e:{set:['wellguard'],hap:1},r:'حارسان على البئر ليلًا ونهارًا.'},{t:'رسائل المجانين كثيرة',e:{},r:'رُميت في الموقد.'}]},
+ {id:'horniron',from:'horn',w:[8,9],cond:()=>S.rel.horn>=60,title:'من الزعيم بُرهان',text:'أرسلتُ لكم حمولة من حديد الجبال. لا تشكروني، اصنعوا منها ما يقطع.',opts:[
+  {t:'إلى الورشة',e:{arms:2,horn:3},r:'حديد الجبال في مخازن السلاح.'}]},
+ {id:'traitorletter',from:'bahram',w:[9,9],cond:()=>!F('exposed'),title:'من بهرام الرمادي',text:'أتعرف لماذا أنا واثق يا سالار؟ لأن أحد أهل بيتك يكتب لي كل أسبوع. ابحث عن الأسد إن استطعت.',opts:[
+  {t:'أعطها لنوال',need:()=>S.ret.nawal.on,hint:'يتطلب نوال',e:{clues:2},r:'قارنت نوال الخط بالرسائل المحترقة: هو نفسه.'},{t:'احفظها دليلًا',e:{clues:1},r:'وضعتها في درج مقفل.'}]},
+ {id:'necklace',from:'dima',w:[10,10],title:'من الملكة ديما',text:'خذ قلادتي يا سالار. أمي أعطتني إياها يوم عرسنا. إن كانت ستشتري سيفًا واحدًا يحمي هذه المدينة، فهذا مكانها.',opts:[
+  {t:'سأحفظها في الخزنة لساعة الحاجة',e:{item:'necklace'},r:'وُضعت القلادة في الخزنة الملكية.'},{t:'احتفظي بها، لن نبيع ذكرياتنا',e:{hap:1,set:['queentrust']},r:'ابتسمت الملكة وأعادتها إلى عنقها.'}]},
+];
+const LFROM={river:['بنو النهر','#2f6f9a'],horn:['أهل القرن','#7a5a3a'],moon:['رهبنة القمر','#6a7ab0'],bahram:['أرض الرماد','#5a1a10'],dima:['الملكة','#2e6b4f'],lina:['الأميرة','#3f7c8a'],unknown:['؟','#3a3040']};
+Object.assign(ITEMS,{
+ spice:{n:'صندوق توابل',d:'هدية مركب جنوبي.',uses:[{t:'بِعه في السوق',e:{gold:45}},{t:'أهده لأهل القرن',e:{horn:10}}]},
+ necklace:{n:'قلادة الملكة',d:'هدية أم ديما يوم عرسها.',uses:[{t:'بِعها للسلاح',e:{gold:70,hap:-2}},{t:'أهدها لبني النهر رهنًا للتحالف',e:{river:18}}]},
+});
+
 /* ---- data/items.js ---- */
 /* ===== DATA: royal treasury items =====
    Each item can be used once: give to a faction or advisor, or sell. */
@@ -1235,6 +1289,18 @@ Object.assign(ITEMS,{
  moonscroll:{n:'مخطوطة القمر',d:'هدية أسيل بعد المصالحة: شروح قديمة في السحر.',uses:[
   {t:'أعطها لسمر',e:{retmod:['samar',.1]}},{t:'أعدها للمعبد تكريمًا',e:{moon:15}},{t:'بِعها لتاجر كتب',e:{gold:40,moon:-8}}]},
 });
+
+/* ---- data/decrees.js ---- */
+/* ===== DATA: weekly decrees (one per week, applied when the week is sealed) ===== */
+const DEC={
+ none:{n:'بلا مرسوم',d:'الأمور تجري كما هي.'},
+ curfew:{n:'حظر التجوال',d:'مهمات الخفاء أنجح بعشرة بالمئة. −٣ رضا.',e:{hap:-3}},
+ farmers:{n:'إعفاء الفلاحين',d:'+٦ طعام، −١٠ ذهب.',gold:-10,food:6},
+ conscript:{n:'التجنيد الإجباري',d:'+٨ جنود، −٤ رضا، −٤ سكان.',e:{soldiers:8,hap:-4,pop:-4}},
+ market:{n:'يوم السوق',d:'+١٠ ذهب، −٤ طعام، +٢ بنو النهر.',gold:10,food:-4,e:{river:2}},
+ prayer:{n:'صلاة القمر',d:'+٤ رهبنة القمر، +١ رضا، −٥ ذهب.',need:()=>F('temple'),hint:'يتطلب بناء المعبد',gold:-5,e:{moon:4,hap:1}},
+ drills:{n:'تدريبات الحامية',d:'+٤ معنويات ليوم الحصار، −٥ طعام.',food:-5,e:{morale:4}},
+};
 
 /* ---- data/endings.js ---- */
 /* ===== DATA: endings ===== */
@@ -1666,6 +1732,33 @@ myPower.extra.push(parts=>{
 /* advisors' personal quests left too long */
 HOOK.weekEnd.push(()=>{
  if(F('saqrquest')&&!F('saqrsaved')&&!F('saqrlost')&&S.week>=9){S.flags.saqrlost=1;S.ret.ghazi.mod-=.1;return 'لم يُعثر على صقر بن غازي. القائد يقاتل الآن بقلب مكسور (−١٠٪).'}
+});
+
+/* ---- weekly decree ---- */
+econ.extra.push(lines=>{const d=DEC[S.decree];if(!d||S.decree==='none')return;if(d.gold)lines.gold.push(['مرسوم: '+d.n,d.gold]);if(d.food)lines.food.push(['مرسوم: '+d.n,d.food])});
+HOOK.weekEnd.push(()=>{const d=DEC[S.decree];if(!d||!d.e)return;const out=apply(d.e);return 'المرسوم ('+d.n+'): '+out.filter(o=>typeof o[1]==='number').map(([k,v])=>STATN[k]+' '+sg(v)).join('، ')});
+COUNCIL.push({html:()=>`<div class="sec" id="secDecree"><h3>مرسوم الأسبوع</h3><div class="seg">${Object.entries(DEC).map(([k,d])=>{const no=d.need&&!d.need();return`<button class="px small${S.decree===k?' on':''}" data-dec="${k}" ${no?'disabled title="'+d.hint+'"':''}>${d.n}</button>`}).join('')}</div><p class="muted">${DEC[S.decree].d}</p></div>`,
+ bind:()=>$$('[data-dec]').forEach(b=>b.onclick=()=>{S.decree=b.dataset.dec;sfx('stamp');renderCouncil()})});
+
+/* ---- royal treasury (items) ---- */
+hud.extraBtns.push({id:'bItems',label:()=>`${ic('chest')} الخزنة${S&&S.items.length?' ('+A(S.items.length)+')':''}`,click:showItems});
+function showItems(){
+ modal(`<h3>الخزنة الملكية</h3><p class="muted">كنوز جمعتها من القضايا والمهام. كل كنز يُستعمل مرة واحدة.</p><div class="items">${S.items.length?S.items.map(k=>{const it=ITEMS[k];return`<div class="item"><b>${ic('chest')} ${it.n}</b><span class="muted">${it.d}</span><div class="sendrow">${it.uses.map((u,i)=>`<button class="px small" data-use="${k}|${i}">${u.t}</button>`).join('')}</div></div>`}).join(''):'<p>الخزنة فارغة. الكنوز تأتي من قرارات القاعة والمهام والرسائل.</p>'}</div>`);
+ $$('[data-use]').forEach(b=>b.onclick=()=>{const[k,i]=b.dataset.use.split('|');const u=ITEMS[k].uses[+i];S.items=S.items.filter(x=>x!==k);const out=apply(u.e);S.log.push(`الأسبوع ${A(S.week)} · الخزنة: ${ITEMS[k].n} ← ${u.t}`);sfx('coin');showItems();toast(ITEMS[k].n+': '+u.t);if(S.phase==='council')renderCouncil()});
+}
+
+/* ---- morning letters ---- */
+PRE.push(done=>{
+ const due=LETTERS.filter(l=>!S.done['L_'+l.id]&&S.week>=l.w[0]&&S.week<=l.w[1]&&(!l.cond||l.cond())).slice(0,2);
+ if(!due.length){done();return}
+ let i=0;const show=()=>{if(i>=due.length){done();return}const l=due[i];const[from,seal]=LFROM[l.from]||FAC[l.from]&&[FAC[l.from].n,FAC[l.from].seal]||['',''];
+  sfx('quill');
+  $('#panel').innerHTML=`<p class="muted">رسائل الصباح (${A(i+1)} من ${A(due.length)})</p><div class="letter"><span class="seal" style="background:${seal}">${from.slice(0,1)}</span><h4>${l.title}</h4><p>${l.text}</p><div class="opts">${l.opts.map((o,j)=>{const why=optState(o);return`<button class="opt" data-l="${j}" ${why?'disabled':''}><span>${o.t}</span><span class="chips">${costChips(o.cost)}${o.need&&o.hint?`<span class="chip ${why?'bad':'req'}">${o.hint}</span>`:''}</span></button>`}).join('')}</div></div>`;
+  $$('[data-l]').forEach(b=>b.onclick=()=>{const o=l.opts[+b.dataset.l];if(optState(o))return;sfx('stamp');
+   for(const[k,v]of Object.entries(o.cost||{}))S[k]-=v;const out=apply(o.e);S.done['L_'+l.id]=1;S.log.push(`الأسبوع ${A(S.week)} · رسالة «${l.title}»: ${o.t}`);
+   $('#panel').innerHTML=`<div class="letter"><h4>${l.title}</h4><p>${o.r}</p></div><div class="chips">${chipsFor(out)}</div><div class="row"><span></span><button class="px gold" id="nx">${i+1<due.length?'الرسالة التالية':'افتحوا القاعة'}</button></div>`;
+   $('#nx').onclick=()=>{i++;show()}})};
+ show();
 });
 
 /* ---- engine/ending.js ---- */
