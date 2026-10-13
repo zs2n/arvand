@@ -41,6 +41,7 @@ const C={
  lordling:{skin:'#e0ad83',hair:'#6a4a2a',hs:1,robe:'#2a4a6a',trim:'#c9a24a',hat:'cap',hatc:'#1a2a3a',cape:'#1a3a5a',beard:'#6a4a2a'},
  watchman:{skin:'#c48a60',hair:'#333333',hs:1,robe:'#4a3a2a',trim:'#8a8a8a',hat:'helm',item:'spear'},
  saqr:{skin:'#c48a60',hair:'#222222',hs:1,robe:'#6a2a2a',trim:'#a7a9ad',hat:null,item:'sword'},
+ ashsoldier:{skin:'#bfa898',hair:'#555555',hs:1,robe:'#3a3438',trim:'#c4552b',hat:'helm',item:'spear',armor:1},
  stablemaster:{skin:'#b97f55',hair:'#5a3a20',hs:1,robe:'#6a5030',trim:'#3a2a1a',hat:'cap',hatc:'#5a4020',beard:'#5a3a20'},
 };
 const N={

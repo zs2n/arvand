@@ -38,15 +38,17 @@ function siegeScene(t){
  x.fillStyle='#3a2418';x.fillRect(0,136,W,44);
  /* enemy army advances with the phases */
  const target=[250,190,150,130][SG.phase]||130;SG.enemyX+=(target-SG.enemyX)*.01;
- const n=Math.round(60*SG.en);
- for(let i=0;i<n;i++){const ex=SG.enemyX+(i%10)*12+((i*7)%5),ey=128+Math.floor(i/10)*6,bob=Math.round(Math.sin(t/200+i)*1);
-  x.fillStyle='#4a4044';x.fillRect(ex,ey+bob,3,6);x.fillStyle='#bfa898';x.fillRect(ex,ey-2+bob,3,2);if(i%9===0){x.fillStyle='#6a1a10';x.fillRect(ex+1,ey-8+bob,1,6);x.fillStyle='#c4552b';x.fillRect(ex+2,ey-8+bob,4,3)}}
+ const n=Math.round(34*Math.min(1.3,SG.en)),es=SP3.get('ashsoldier',{style:'tall',H:18,facing:'q',frame:0}),es2=SP3.get('ashsoldier',{style:'tall',H:18,facing:'q',frame:1});
+ for(let i=0;i<n;i++){const col=i%8,row=Math.floor(i/8),ex=Math.round(SG.enemyX+col*16+row*6),ey=Math.round(118+row*7),cv=(Math.floor(t/220)+i)%2?es:es2;
+  x.save();x.translate(ex,0);x.scale(-1,1);x.drawImage(cv,-Math.round(cv.width/2),ey);x.restore();
+  if(i%8===3){x.fillStyle='#3a1a10';x.fillRect(ex+2,ey-10,1,12);x.fillStyle='#c4552b';x.fillRect(ex+3,ey-10+Math.round(Math.sin(t/200+i)),5,3)}}
  if(SG.phase>=1){x.fillStyle='#5a3a20';x.fillRect(SG.enemyX-30,138,24,6);x.fillStyle='#2a2028';x.fillRect(SG.enemyX-34,139,6,4)}
  /* the wall */
  x.fillStyle='#4a4250';x.fillRect(0,60,96,120);for(let i=0;i<96;i+=12){x.fillRect(i,52,8,8)}x.fillStyle='#5e5468';for(let y=64;y<180;y+=8)for(let i=(y/8)%2?0:6;i<96;i+=12)x.fillRect(i+1,y+1,10,6);
  x.fillStyle='#2a1a14';x.fillRect(70,120,22,60);x.fillStyle=SG.phase>=2?'#6a4a2a':'#4e321e';x.fillRect(72,122,18,58);
  if(SG.phase>=3){x.fillStyle='#1a1014';x.beginPath();x.moveTo(20,60);x.lineTo(40,70);x.lineTo(30,100);x.lineTo(14,90);x.fill()}
- const defenders=Math.round(10*SG.my);for(let i=0;i<defenders;i++){const dx=6+i*9,dy=46;x.fillStyle='#7a1f2b';x.fillRect(dx,dy,3,6);x.fillStyle='#e0ad83';x.fillRect(dx,dy-2,3,2);x.fillStyle='#a2abb8';x.fillRect(dx+3,dy-4,1,8)}
+ const defenders=Math.round(7*Math.min(1.4,SG.my)),dv=SP3.get('guard',{style:'tall',H:16,facing:'q'});
+ for(let i=0;i<defenders;i++)x.drawImage(dv,4+i*12,36);
  /* arrows and fire */
  if(Math.random()<.25)SG.arrows.push({x:90,y:48,vx:2+Math.random()*1.5,vy:-1-Math.random()});
  if(Math.random()<.15)SG.arrows.push({x:SG.enemyX,y:124,vx:-2-Math.random(),vy:-1.6,e:1});
