@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="عرش أرْوَند: لعبة إدارة مملكة وقرارات بأسلوب بكسل آرت، من إنتاج استوديو قرطاس.">
+</head>
+<body>
+<title>عرش أرْوَند</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:wght@400;600;800&family=Noto+Kufi+Arabic:wght@400;600;700&display=swap">
+<style>
+/* Layout: pixel throne-room stage beside a stone-and-parchment ledger panel; single dark candle-lit look by design */
+:root{
+  --ink:#120d14; --stone:#211825; --stone2:#2f2335; --stone3:#3f2f47;
+  --parch:#e8d6ae; --parch2:#cdb88a; --text:#efe4cc; --muted:#a8987f;
+  --gold:#e3b54e; --blood:#b02e43; --moss:#7fa95c; --ash:#8e8892; --sky:#7aa6d8; --edge:#5b4566;
+  --f-disp:"Handjet","Noto Kufi Arabic",system-ui,sans-serif;
+  --f-body:"Noto Kufi Arabic","Segoe UI",Tahoma,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:var(--ink);color:var(--text);font-family:var(--f-body);font-size:15px;line-height:1.75;margin:0}
+*{box-sizing:border-box}
+button{font-family:inherit;color:inherit}
+:focus-visible{outline:2px dashed var(--gold);outline-offset:2px}
+#app{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:10px 24px;display:grid;gap:12px}
+/* HUD */
+#hud{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;background:var(--stone);border:3px solid var(--edge);box-shadow:0 0 0 3px var(--ink),inset 0 -3px 0 var(--stone2);padding:8px 12px}
+#hud .when{font-family:var(--f-disp);font-size:22px;font-weight:800;color:var(--gold);line-height:1.1;min-width:0}
+#hud .when small{display:block;font-family:var(--f-body);font-size:12px;font-weight:400;color:var(--muted)}
+.stats{display:flex;flex-wrap:wrap;gap:6px 14px;flex:1;min-width:0}
+.stat{display:flex;align-items:center;gap:6px;position:relative}
+.stat img{width:20px;height:20px;image-rendering:pixelated}
+.stat b{font-family:var(--f-disp);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.stat span{font-size:11px;color:var(--muted)}
+.stat.low b{color:#ff7a7a}
+.float{position:absolute;top:-14px;inset-inline-start:22px;font-family:var(--f-disp);font-size:18px;font-weight:800;pointer-events:none;animation:up 1.4s ease-out forwards}
+.float.pos{color:var(--moss)}.float.neg{color:#ff7a7a}
+@keyframes up{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-18px)}}
+.hbtns{display:flex;gap:6px}
+/* pixel buttons */
+.px{background:var(--stone2);border:2px solid var(--edge);box-shadow:0 3px 0 var(--ink);padding:6px 12px;cursor:pointer;font-size:14px;transition:background .12s}
+.px:hover:not(:disabled){background:var(--stone3)}
+.px:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.px:disabled{opacity:.45;cursor:not-allowed}
+.px.gold{background:#5a4214;border-color:var(--gold);color:#fff3cf}
+.px.gold:hover:not(:disabled){background:#715318}
+.px.small{padding:3px 9px;font-size:13px}
+/* main grid */
+#main{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:980px){#main{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);align-items:start}}
+#stage{position:relative;border:3px solid var(--edge);box-shadow:0 0 0 3px var(--ink);background:#000;min-width:0}
+#stage canvas{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges}
+#mapWrap{position:relative}
+.node{position:absolute;transform:translate(50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;cursor:pointer;padding:0}
+.node i{display:block;width:14px;height:14px;background:var(--gold);border:2px solid var(--ink);transform:rotate(45deg);box-shadow:0 0 0 2px var(--gold)}
+.node.sel i{background:#fff;box-shadow:0 0 0 3px var(--blood)}
+.node em{font-style:normal;font-size:12px;background:rgba(18,13,20,.85);padding:0 6px;border:1px solid var(--edge);white-space:nowrap}
+.node .badge{position:absolute;top:-10px;inset-inline-end:-12px;font-family:var(--f-disp);font-size:13px;background:var(--blood);color:#fff;padding:0 4px;line-height:1.3}
+.node .busy{position:absolute;top:-10px;inset-inline-start:-14px;font-size:11px;background:var(--moss);color:#111;padding:0 4px;line-height:1.4}
+#card{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+#card div{font-family:var(--f-disp);font-size:clamp(26px,4.5vw,46px);font-weight:800;color:var(--gold);text-shadow:0 3px 0 var(--ink);background:rgba(18,13,20,.72);padding:8px 26px;border-block:3px solid var(--gold);text-align:center;line-height:1.25;animation:card 3.2s ease forwards}
+#card small{display:block;font-family:var(--f-body);font-size:14px;color:var(--parch);font-weight:400}
+@keyframes card{0%{opacity:0;transform:scale(.96)}12%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0}}
+.queue{position:absolute;bottom:6px;inset-inline-start:8px;font-size:12px;background:rgba(18,13,20,.8);padding:1px 8px;border:1px solid var(--edge)}
+/* panel */
+#panel{background:var(--stone);border:3px solid var(--edge);box-shadow:0 0 0 3px var(--ink);padding:14px;min-width:0;display:grid;gap:12px}
+.who{display:flex;gap:12px;align-items:center}
+.who canvas{width:64px;height:64px;image-rendering:pixelated;background:var(--stone2);border:2px solid var(--edge);flex:none}
+.who h2{margin:0;font-family:var(--f-disp);font-size:26px;font-weight:800;line-height:1.1;color:var(--parch)}
+.who p{margin:0;font-size:12px;color:var(--muted)}
+.speech{background:var(--parch);color:#2a1d14;padding:12px 14px;border:2px solid var(--parch2);box-shadow:inset 0 0 0 2px #f4e7c6;min-height:96px;font-size:15.5px;cursor:pointer;line-height:1.85}
+.opts{display:grid;gap:8px}
+.opt{display:grid;gap:4px;text-align:start;background:var(--stone2);border:2px solid var(--edge);box-shadow:0 3px 0 var(--ink);padding:9px 12px;cursor:pointer;font-size:14.5px}
+.opt:hover:not(:disabled){background:var(--stone3);border-color:var(--gold)}
+.opt:disabled{opacity:.5;cursor:not-allowed}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:12px;background:var(--ink);border:1px solid var(--edge);padding:0 6px;line-height:1.7;font-variant-numeric:tabular-nums}
+.chip img{width:12px;height:12px;image-rendering:pixelated}
+.chip.cost{border-color:#7a4a2a;color:#ffc89a}
+.chip.req{border-color:#4f6a8a;color:#bfe0ff}
+.chip.bad{border-color:#7a2a35;color:#ff9aa8}
+.chip.good{border-color:#4a6a3a;color:#bfe8a0}
+.chip.risk{border-color:#6a5a2a;color:#ffe08a}
+.result{border-inline-start:4px solid var(--gold);padding-inline-start:10px}
+h3{margin:0;font-family:var(--f-disp);font-size:22px;font-weight:800;color:var(--gold);line-height:1.2}
+.sec{display:grid;gap:8px}
+.muted{color:var(--muted);font-size:13px}
+.rets{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.ret{display:flex;gap:8px;align-items:center;background:var(--stone2);border:2px solid var(--edge);padding:6px}
+.ret canvas{width:40px;height:40px;image-rendering:pixelated;flex:none;background:var(--ink)}
+.ret b{display:block;font-size:13px;line-height:1.4}
+.ret small{font-size:11px;line-height:1.5}
+.st-ok{color:var(--moss)}.st-no{color:#ff9aa8}.st-mid{color:var(--gold)}
+.ret.off{opacity:.45}
+.mis{background:var(--stone2);border:2px solid var(--edge);padding:9px 10px;display:grid;gap:6px}
+.mis header{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.mis b{font-size:14.5px}
+.mis p{margin:0;font-size:13px;color:var(--muted)}
+.sendrow{display:flex;flex-wrap:wrap;gap:6px}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg .px.on{background:#5a4214;border-color:var(--gold)}
+.ledger{background:var(--parch);color:#2a1d14;padding:14px 16px;border:2px solid var(--parch2);display:grid;gap:10px}
+.ledger h3{color:#6a1a22}
+.ledger h4{margin:0;font-size:14px;border-bottom:1px dashed #9a845a;padding-bottom:2px;color:#4a3420}
+.ledger ul{margin:0;padding:0;list-style:none;display:grid;gap:2px;font-size:14px}
+.ledger li{display:flex;justify-content:space-between;gap:10px}
+.ledger li span:last-child{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.ledger .p{color:#2e6a1a}.ledger .n{color:#9a1a22}
+.ledger .note{font-size:13.5px;line-height:1.7}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+/* overlays */
+.overlay{position:fixed;inset:0;background:rgba(10,7,12,.86);display:grid;place-items:center;padding:16px;z-index:20;overflow:auto}
+.box{background:var(--stone);border:3px solid var(--edge);box-shadow:0 0 0 3px var(--ink);max-width:640px;width:100%;padding:18px;display:grid;gap:12px;max-height:calc(100% - 20px);overflow:auto}
+.title-name{font-family:var(--f-disp);font-size:clamp(48px,11vw,92px);font-weight:800;color:var(--gold);line-height:.95;text-align:center;text-shadow:0 4px 0 #5a1a22}
+.title-sub{text-align:center;color:var(--parch);margin:0}
+.box p{margin:0}
+.fac{display:grid;gap:4px;background:var(--stone2);border:2px solid var(--edge);padding:8px 10px}
+.bar{position:relative;height:12px;background:var(--ink);border:1px solid var(--edge)}
+.bar i{position:absolute;inset-block:0;inset-inline-start:0;background:var(--gold)}
+.bar u{position:absolute;inset-block:-3px;inset-inline-start:70%;width:2px;background:var(--parch)}
+.log{display:grid;gap:4px;font-size:13.5px;max-height:55vh;overflow:auto}
+.log div{border-bottom:1px solid var(--stone2);padding-block:3px}
+.ending h1{font-family:var(--f-disp);font-size:clamp(36px,8vw,60px);font-weight:800;color:var(--gold);margin:0;line-height:1.05;text-wrap:balance}
+.credit{text-align:center;font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div id="app">
+  <header id="hud"></header>
+  <div id="main">
+    <div id="stage">
+      <canvas id="scene" width="320" height="180" aria-label="قاعة العرش"></canvas>
+      <div id="mapWrap" hidden><canvas id="map" width="320" height="200" aria-label="خريطة المملكة"></canvas><div id="nodes"></div></div>
+      <div id="card"></div>
+      <div class="queue" id="queue" hidden></div>
+    </div>
+    <section id="panel" aria-live="polite"></section>
+  </div>
+</div>
+<div id="ov" class="overlay" hidden></div>
+
+<script>
+"use strict";
+document.documentElement.lang='ar';document.documentElement.dir='rtl';
+const $=s=>document.querySelector(s);
+const AD='٠١٢٣٤٥٦٧٨٩';
+const A=n=>String(Math.round(n)).replace(/-/g,'−').replace(/\d/g,d=>AD[d]);
+const sg=v=>(v>0?'+':'')+A(v);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+/* ---------- pixel icons ---------- */
+const ICONS={
+ gold:[["..aaaa..",".abbbba.","abbccbba","abcbbcba","abcbbcba","abbccbba",".abbbba.","..aaaa.."],{a:'#8a5a12',b:'#f2c14e',c:'#fff1a8'}],
+ food:[["...a....","..aba.a.",".abcbaba","..abcba.","...abba.","..abcba.",".abbba..","..aaa..."],{a:'#6b3d17',b:'#d9913f',c:'#f6d18b'}],
+ hap:[[".aa..aa.","abbaabba","abcbbbba","abbbbbba",".abbbba.","..abba..","...aa...","........"],{a:'#5a0f1c',b:'#d8384f',c:'#ff9aa8'}],
+ soldiers:[["......aa",".....aba","....aba.","c..aba..",".caba...","..cc....",".cdc....","cd..c..."],{a:'#6d7480',b:'#dfe6ee',c:'#7a4a22',d:'#c9a24a'}],
+ pop:[["...aa...","..abba..","..abba..","...aa...",".cccccc.","cccccccc",".cc..cc.",".cc..cc."],{a:'#3b2a20',b:'#e0b089',c:'#5a7fa6'}],
+ fort:[["a.a..a.a","aaaaaaaa",".abbbba.",".abccba.",".abbbba.",".abbbba.",".abccba.",".aaaaaa."],{a:'#4a4f5a',b:'#9aa3b0',c:'#20232a'}],
+ enemy:[["...a....","..aba...","..abba..",".abcba..",".abccba.","abcccba.","abcccbba",".aaaaaa."],{a:'#3a1a10',b:'#c4552b',c:'#f2b24a'}],
+ river:[["........","a..a..a.",".aa.aa.a","........","a..a..a.",".aa.aa.a","........","aaaaaaaa"],{a:'#5fa8e0'}],
+ horn:[["a......a","ab....ba",".ab..ba.",".abccba.","..cccc..","..cddc..","..cccc..","...cc..."],{a:'#e8e0c8',b:'#b8a880',c:'#7a5a3a',d:'#c9a24a'}],
+ moon:[["..aaa...",".abb....","abb.....","abb.....","abb.....","abb....a",".abbbba.","..aaaa.."],{a:'#9fb8e0',b:'#e8f0ff'}],
+ clue:[["..aaaa..",".abbbba.","ab.cc.ba","ab.cc.ba","abbbbbba",".abbbba.","..aaaa.a",".......a"],{a:'#c9a24a',b:'#2a2030',c:'#e3b54e'}],
+};
+const ICON={};
+for(const k in ICONS){const[rows,pal]=ICONS[k];const c=document.createElement('canvas');c.width=8;c.height=8;const x=c.getContext('2d');rows.forEach((r,y)=>[...r].forEach((ch,i)=>{if(pal[ch]){x.fillStyle=pal[ch];x.fillRect(i,y,1,1)}}));ICON[k]=c.toDataURL()}
+const STATN={gold:'ذهب',food:'طعام',hap:'رضا',soldiers:'جنود',pop:'سكان',fort:'أسوار',enemy:'جيش بهرام',river:'بنو النهر',horn:'أهل القرن',moon:'رهبنة القمر',clues:'دليل'};
+const ic=k=>`<img src="${ICON[k]}" alt="">`;
+
+/* ---------- colors & sprites ---------- */
+function shade(hex,a){const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;const t=a<0?0:255,p=Math.abs(a);r=Math.round(r+(t-r)*p);g=Math.round(g+(t-g)*p);b=Math.round(b+(t-b)*p);return'#'+((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1)}
+const C={
+ king:{skin:'#e0ad83',hair:'#3a2418',hs:1,robe:'#7a1f3a',trim:'#e3b54e',hat:'crown',beard:'#3a2418',cape:'#a3283a'},
+ herald:{skin:'#c99673',hair:'#222',hs:0,robe:'#4a4652',trim:'#8b8790',hat:'hood',item:'spear'},
+ farmer:{skin:'#c98c5e',hair:'#4a3020',hs:1,robe:'#7a6a3a',trim:'#4a3a1a',hat:'cap',hatc:'#b89a50',beard:'#4a3020',item:'basket'},
+ rustam:{skin:'#e0ad83',hair:'#1e1410',hs:1,robe:'#4b2a6b',trim:'#c9a24a',hat:'circlet',beard:'#1e1410',cape:'#2a1a3a'},
+ farrukh:{skin:'#b97f55',hair:'#222',hs:1,robe:'#2f5f8a',trim:'#d8c27a',hat:'turban',hatc:'#efe6d0',item:'scroll'},
+ mehran:{skin:'#c48a60',hair:'#888',hs:1,robe:'#1f4a6e',trim:'#e3b54e',hat:'turban',hatc:'#2f7fb0',beard:'#9a9a9a',cape:'#173650'},
+ nawal:{skin:'#d9a37c',hair:'#111',hs:2,robe:'#1d1a24',trim:'#5a4a6a',hat:'hood'},
+ burhan:{skin:'#c98c5e',hair:'#6b4a2a',hs:2,robe:'#6b4a2a',trim:'#a7a9ad',hat:'helm',beard:'#8a5a32',item:'sword',cape:'#3d2c1c'},
+ asil:{skin:'#ead0b6',hair:'#ddd',hs:2,robe:'#d8dce6',trim:'#7aa6d8',hat:'veil',hatc:'#eef2fa',item:'staff',itemc:'#9fd0ff'},
+ dima:{skin:'#e7b993',hair:'#5a2e1a',hs:2,robe:'#2e6b4f',trim:'#e3b54e',hat:'crown'},
+ lina:{skin:'#e7b993',hair:'#6a3a20',hs:2,robe:'#3f7c8a',trim:'#f0d8a0',hat:'circlet'},
+ ghazi:{skin:'#c48a60',hair:'#222',hs:1,robe:'#8a2a2a',trim:'#a7a9ad',hat:'helm',beard:'#333',item:'spear'},
+ samar:{skin:'#d9a37c',hair:'#333',hs:2,robe:'#5a3a7a',trim:'#c9a24a',hat:'hood',item:'staff',itemc:'#d48cff'},
+ raad:{skin:'#c48a60',hair:'#6b4a2a',hs:1,robe:'#3f5a2e',trim:'#6b4a2a',hat:'hood',item:'bow',beard:'#6b4a2a'},
+ guard:{skin:'#c48a60',hair:'#222',hs:1,robe:'#6a2430',trim:'#a7a9ad',hat:'helm',item:'spear'},
+ halima:{skin:'#c98c5e',hair:'#3a2418',hs:2,robe:'#8a5a3a',trim:'#d9b06a',hat:'veil',hatc:'#c9a07a'},
+ bard:{skin:'#e0ad83',hair:'#c46a2a',hs:2,robe:'#2f7a5a',trim:'#e3b54e',hat:'cap',hatc:'#a3283a'},
+ widow:{skin:'#d9a37c',hair:'#222',hs:2,robe:'#2a2a33',trim:'#555',hat:'veil',hatc:'#3a3a44'},
+ tinker:{skin:'#e0ad83',hair:'#ccc',hs:1,robe:'#7a5a2a',trim:'#3a2a1a',hat:'cap',hatc:'#4a3a2a',beard:'#ccc',item:'scroll'},
+ pilgrim:{skin:'#c99673',hair:'#555',hs:0,robe:'#9aa4b8',trim:'#7aa6d8',hat:'hood',item:'staff',itemc:'#cfe0ff'},
+ hunter:{skin:'#b97f55',hair:'#4a3020',hs:1,robe:'#5a4a2a',trim:'#3a2a1a',hat:'cap',hatc:'#3f5a2e',beard:'#4a3020',item:'bow'},
+ merchant:{skin:'#e0ad83',hair:'#333',hs:1,robe:'#8a6a1a',trim:'#e3b54e',hat:'turban',hatc:'#c46a2a',beard:'#333',item:'scroll'},
+ merc:{skin:'#c48a60',hair:'#222',hs:1,robe:'#3a3a40',trim:'#888',hat:'helm',beard:'#222',item:'sword',cape:'#2a2a30'},
+ thief:{skin:'#d9a37c',hair:'#3a2418',hs:1,robe:'#5a4a3a',trim:'#3a2a1a',hat:null},
+ smith:{skin:'#b97f55',hair:'#222',hs:0,robe:'#4a3a30',trim:'#8a6a4a',hat:null,beard:'#222',item:'sword'},
+ noble:{skin:'#efc3a0',hair:'#c9a24a',hs:1,robe:'#6a2a5a',trim:'#e3b54e',hat:'cap',hatc:'#2a1a3a',cape:'#4a1a3a'},
+ refugee:{skin:'#c99673',hair:'#222',hs:2,robe:'#6a6058',trim:'#4a4038',hat:'veil',hatc:'#8a8078'},
+ boy:{skin:'#e0ad83',hair:'#6b4a2a',hs:1,robe:'#4f7aa6',trim:'#d8c27a',hat:null},
+ bahram:{skin:'#bfa898',hair:'#ddd',hs:2,robe:'#3a3438',trim:'#c4552b',hat:'helm',beard:'#ccc',item:'sword',cape:'#5a1a10'},
+ jailer:{skin:'#c48a60',hair:'#444',hs:0,robe:'#4a3a2a',trim:'#888',hat:'cap',hatc:'#333',beard:'#555'},
+};
+function drawPerson(g,x,y,c,frame,flip,seated){
+ const ox=Math.round(x-7),oy=Math.round(y-26)+(frame===1||frame===2?-1:0);
+ const P=(xx,yy,w,h,col)=>{g.fillStyle=col;g.fillRect(ox+(flip?14-xx-w:xx),oy+yy,w,h)};
+ const dark=shade(c.robe,-.32),boot='#24180f';
+ if(c.cape)P(2,9,10,14,c.cape);
+ if(!seated){const ly=oy+(frame?1:0);
+  if(frame===1){P(4,22,2,3,boot);P(8,22,2,5,boot)}else if(frame===2){P(4,22,2,5,boot);P(8,22,2,3,boot)}else{P(4,22,2,4,boot);P(8,22,2,4,boot)}}
+ P(3,9,8,6,c.robe);P(2,15,10,7,c.robe);P(2,21,10,1,dark);P(3,15,8,1,c.trim);P(6,9,2,6,shade(c.robe,.14));
+ P(1,10,2,6,dark);P(1,16,2,1,c.skin);P(11,10,2,6,dark);P(11,16,2,1,c.skin);
+ P(4,2,6,7,c.skin);P(5,9,4,0.01,c.skin);P(8,5,1,1,'#1a1012');P(9,6,1,1,shade(c.skin,-.2));
+ if(c.beard){P(5,7,5,2,c.beard);P(6,9,3,1,c.beard)}
+ if(c.hs===1){P(4,1,6,2,c.hair);P(4,3,2,3,c.hair)}
+ if(c.hs===2){P(4,1,6,2,c.hair);P(3,2,2,9,c.hair);P(5,3,1,2,c.hair)}
+ const gold='#e3b54e';
+ switch(c.hat){
+  case'crown':P(4,1,6,2,gold);P(4,0,1,1,gold);P(6,0,2,1,gold);P(9,0,1,1,gold);P(6,1,2,1,'#c0283a');break;
+  case'circlet':P(4,2,6,1,gold);P(9,2,1,1,'#7ad0ff');break;
+  case'helm':P(3,0,8,4,'#8a9099');P(3,4,2,4,'#6d7480');P(9,3,1,4,'#6d7480');P(5,0,3,1,'#c5ccd6');break;
+  case'hood':{const k=c.hatc||c.robe;P(3,0,8,2,k);P(3,2,2,8,k);P(4,1,6,1,k);P(5,2,4,1,shade(c.skin,-.25));P(10,2,1,3,k);break}
+  case'veil':{const k=c.hatc||c.trim;P(3,0,8,2,k);P(3,2,2,9,k);P(4,1,6,1,k);P(10,2,1,4,k);break}
+  case'turban':{const k=c.hatc;P(3,-1,8,4,k);P(4,1,6,1,shade(k,-.15));P(8,0,1,1,'#c0283a');break}
+  case'cap':P(4,0,7,3,c.hatc);P(10,2,2,1,shade(c.hatc,-.2));break;
+ }
+ switch(c.item){
+  case'staff':P(13,3,1,22,'#6b4423');P(12,1,3,3,c.itemc||'#9fd0ff');break;
+  case'spear':P(13,2,1,23,'#6b4423');P(12,0,3,3,'#c5ccd6');P(13,-1,1,1,'#c5ccd6');break;
+  case'bow':P(13,6,1,14,'#7a5030');P(12,5,1,1,'#7a5030');P(12,20,1,1,'#7a5030');break;
+  case'scroll':P(11,15,3,3,'#efe2c0');P(11,15,3,1,'#c9a24a');break;
+  case'basket':P(10,16,4,3,'#8a5a30');P(10,15,4,1,'#d9a35a');break;
+  case'sword':P(12,8,1,10,'#c5ccd6');P(11,17,3,1,'#c9a24a');P(12,18,1,2,'#5b3a1e');break;
+ }
+}
+function portrait(cv,key,bg){
+ const c=C[key]||C.guard;cv.width=16;cv.height=16;const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+ g.fillStyle=bg||'#2f2335';g.fillRect(0,0,16,16);
+ const o=document.createElement('canvas');o.width=16;o.height=30;const og=o.getContext('2d');drawPerson(og,8,29,c,0,true);
+ g.drawImage(o,0,1,16,16,0,0,16,16);
+}
+
+/* ---------- data: people ---------- */
+const N={
+ herald:['الرسول الرمادي','مبعوث بهرام سيّد أرض الرماد'],farmer:['عُدَيّ المزارع','من قرية الطاحونة'],
+ rustam:['الأمير رُستم','أخو الملك، خاتمه أسدٌ متوَّج'],farrukh:['السفير فَرّوخ','رسول بني النهر'],mehran:['اللورد مِهران','سيّد بني النهر'],
+ nawal:['نوال','غريبة ترتدي الظل'],burhan:['الزعيم بُرهان','سيّد أهل القرن'],asil:['الكاهنة أسيل','الكاهنة العليا لرهبنة القمر'],
+ dima:['الملكة ديما','زوجة الملك'],lina:['الأميرة لينا','ابنة الملك'],ghazi:['القائد غازي','قائد جيش أرْوَند'],samar:['العرّافة سمر','عرّافة البلاط وطبيبته'],raad:['الصيّاد رعد','صيّاد الملك ودليله'],
+ guard:['الحارس سليم','حرس البوابة الشرقية'],halima:['حليمة','قابلة قرية الطاحونة'],bard:['زِرياب الصغير','مغنٍّ جوّال'],widow:['أم ناصر','أرملة جندي'],
+ tinker:['المعلّم دانيال','صانع آلات'],pilgrim:['حاجّ القمر','زائر للمعبد'],hunter:['شهاب','صيّاد من الغابة'],merchant:['التاجر قاسم','تاجر حبوب'],
+ merc:['القائدة رَزان','زعيمة سريّة الحديد المأجورة'],thief:['سارق الخبز','يقوده الحرس'],smith:['الحدّاد بكر','حدّاد العاصمة'],noble:['السيد قيصر','نبيل الضياع الغربية'],
+ refugee:['مريم','لاجئة من أرض الرماد'],boy:['يونس','صبيّ من القرية'],bahram:['بَهرام الرمادي','سيّد أرض الرماد'],jailer:['السجّان عِمران','حارس القبو'],
+};
+const RET={
+ ghazi:{sk:{war:3,talk:1,wild:1,shadow:0,magic:0}},
+ samar:{sk:{war:0,talk:2,wild:1,shadow:0,magic:3}},
+ raad:{sk:{war:1,talk:0,wild:3,shadow:1,magic:0}},
+ nawal:{sk:{war:0,talk:2,wild:0,shadow:3,magic:1}},
+};
+const SKN={war:'القتال',talk:'الدبلوماسية',wild:'البرّية',shadow:'الخفاء',magic:'السحر'};
+const FAC={
+ river:{n:'بنو النهر',lord:'اللورد مِهران',give:'٤٠ بحّارًا مسلّحًا يوم الحصار + ١٠ ذهب أسبوعيًا من التجارة',want:'تخفيف الرسوم، الوفاء بالديون، الحماية من القراصنة'},
+ horn:{n:'أهل القرن',lord:'الزعيم بُرهان',give:'٨٠ محاربًا جبليًا يوم الحصار',want:'روابط الدم، الشجاعة، الحديد'},
+ moon:{n:'رهبنة القمر',lord:'الكاهنة أسيل',give:'سحرٌ يُضعف جيش بهرام بمقدار الخُمس',want:'معبد في العاصمة، التسامح، الرحمة بالغرباء'},
+};
+
+/* ---------- state ---------- */
+let S;
+function fresh(){return{week:1,gold:120,food:90,hap:55,soldiers:60,pop:150,fort:0,enemy:240,clues:0,sabotage:0,
+ tax:1,ration:0,rel:{river:40,horn:35,moon:40},flags:{},done:{},follow:[],
+ ret:{ghazi:{on:1,inj:0},samar:{on:1,inj:0},raad:{on:1,inj:0},nawal:{on:0,inj:0}},
+ missions:[],usedW:{},queue:[],qi:0,log:[],wk:[],plan:'field',phase:'court',lastCh:0}}
+const F=f=>!!S.flags[f];
+const chapter=w=>w<=4?1:w<=8?2:w<=11?3:4;
+const CH={1:['الفصل الأول','سنة العطش'],2:['الفصل الثاني','همسٌ في الأروقة'],3:['الفصل الثالث','ريح الرماد'],4:['الخاتمة','الحصار']};
+function retState(k){const r=S.ret[k];if(!r.on)return'غائب';if(r.inj>S.week)return'مصاب';const m=S.missions.find(m=>m.ret===k);if(m)return'في مهمة';if(S.usedW[k])return'مشغول اليوم';return'متاح'}
+const avail=k=>retState(k)==='متاح';
+
+/* ---------- events ---------- */
+/* option: t text, cost{}, req retainer, need fn, hint, e effect, r result, ch {p, ok:{e,r}, no:{e,r}} */
+const E={
+herald:{who:'herald',w:[1,1],story:1,text:'يا سالار، ملك أرْوَند. سيّدي بَهرام يقول: الأرض الخضراء التي تجلس عليها كانت لأجداده. أمامك اثنا عشر أسبوعًا. افتح بواباتك وادفع، أو سيأتيك الرماد بنفسه.',opts:[
+ {t:'ادفع مئة قطعة ذهب كبادرة حسن نيّة',cost:{gold:100},e:{hap:-6,enemy:-25,set:['paid']},r:'أخذ الرسول الذهب وابتسم. في السوق يقولون إن ملكهم يشتري الوقت بالذهب، لكنّ بهرام سيأتي أقلّ غضبًا.'},
+ {t:'ارفض بكلمة واحدة: «لا».',e:{hap:5},r:'صفّق الحرس. خرج الرسول دون أن ينحني، وفي عينيه وعدٌ بالحرب.'},
+ {t:'احبس الرسول في القبو',e:{hap:8,enemy:25,moon:-5,set:['jailed']},r:'سيغضب بهرام لهذه الإهانة. لكنّ رجلًا في القبو قد يعرف أسرارًا لا يعرفها غيره.'},
+]},
+wells:{who:'farmer',w:[1,1],story:1,text:'مولاي، آبار قرية الطاحونة جفّت حتى صار الدلو يعود بالطين. إن لم نحفر أعمق فلن يبقى قمح حين يشتدّ الجفاف. نحتاج ثلاثين قطعة ذهب أجرةً للحفّارين.',opts:[
+ {t:'خذ الذهب واحفروا',cost:{gold:30},e:{hap:4,set:['wells']},r:'ستقاوم الحقول الجفاف القادم. إنتاج الطعام سيبقى ثابتًا كل أسبوع.'},
+ {t:'سيذهب رعد يبحث عن نبعٍ في التلال',req:'raad',ch:{p:.6,ok:{e:{hap:3,set:['wells']},r:'وجد رعد نبعًا قديمًا تحت صخرة مكسوّة بالطحلب. لم يكلّف الأمر قطعة ذهب واحدة.'},no:{e:{hap:-2,follow:['farmers',2]},r:'عاد رعد بعد ثلاثة أيام وقربته فارغة. التلال جافّة مثل الوادي.'}}},
+ {t:'الخزينة لا تحتمل الآن',e:{hap:-3,follow:['farmers',2]},r:'رحل عُدَيّ مطأطئ الرأس. سيعود، ومعه غيره.'},
+]},
+rustam1:{who:'rustam',w:[2,2],story:1,text:'أخي. الحدود الشرقية بلا عيون، والبرج القديم فارغ. أعطني عشرين جنديًا وسأجعل البرج سدًّا في وجه بهرام. أنا من دمك، فمن غيري تثق به؟',opts:[
+ {t:'خذ عشرين جنديًا والبرج لك',cost:{soldiers:20},e:{set:['tower']},r:'قبّل رستم يدك وغادر مسرعًا. البرج الشرقي الآن تحت إمرته وحده.'},
+ {t:'خذ عشرة، وسيرافقك سليم من حرسي',cost:{soldiers:10},e:{set:['tower','watched'],follow:['towerreport',3]},r:'تجمّد وجه رستم لحظة، ثم شكرك. سليم رجل لا ينام إلا بعين واحدة.'},
+ {t:'البرج يحتاج جنديًا لا أميرًا',e:{set:['bitter']},r:'ابتسم رستم ابتسامة لم تصل إلى عينيه، وانحنى أكثر مما يلزم.'},
+]},
+river1:{who:'farrukh',w:[2,2],story:1,text:'اللورد مِهران يحيّيكم. سفننا تحمل الملح والحرير، لكنّ رسوم جسوركم تُثقل كاهلها. خفّفوها، وستجدون بني النهر أصدقاء أوفياء حين تحتاجونهم.',opts:[
+ {t:'نخفّض الرسوم إلى النصف',e:{river:18,set:['tolls']},r:'ستخسر الخزينة خمس قطع كل أسبوع، لكنّ مِهران لن ينسى هذا.'},
+ {t:'بدلًا من ذلك: أقرضونا ثمانين قطعة ذهب',e:{gold:80,river:4,set:['loan'],follow:['loan',6]},r:'وقّعت على صكّ الدين. موعد السداد بعد ستة أسابيع: مئة قطعة.'},
+ {t:'الرسوم باقية كما هي',e:{river:-12},r:'طوى فرّوخ أوراقه ببطء متعمّد.'},
+]},
+nawal:{who:'nawal',w:[3,3],story:1,text:'لا تنظر إلى الحرس، فهم لم يروني أدخل. أنا نوال، أبيع ما يبيعه الظل: الأسماء والرسائل والنوايا. في بلاطك من يكتب إلى الشرق ليلًا. استأجرني بأربعين قطعة ذهب وسأعرف لك من هو.',opts:[
+ {t:'اتفقنا. أربعون قطعة',cost:{gold:40},e:{unlock:'nawal'},r:'انضمّت نوال إلى مجلسك. تستطيع إرسالها في مهمات الخفاء والتجسّس.'},
+ {t:'خدمة المملكة تكفي أجرًا',need:()=>S.hap>=55,hint:'يتطلب رضا ٥٥ فأكثر',e:{unlock:'nawal'},r:'نظرت إلى الحشد خارج النافذة طويلًا، ثم قالت: «شعبٌ يحبّ ملكه يستحق حارسًا من الظل».'},
+ {t:'لا حاجة لي بالظلال',e:{set:['nonawal']},r:'حين التفتّ، لم يكن هناك أحد.'},
+]},
+horn1:{who:'burhan',w:[3,3],story:1,text:'نحن أهل القرن لا نبيع سيوفنا بالذهب، نعطيها لمن هو منّا. ابني جسّار بلغ العشرين، وابنتك لينا بلغت التاسعة عشرة. اربط بيتك ببيتي وستنزل الجبال لتقاتل معك.',opts:[
+ {t:'أوافق على خطبة لينا لجسّار',e:{horn:35,set:['betrothed']},r:'ضرب برهان صدره بقبضته. في الجبال الليلة سيُشعلون النيران احتفالًا.'},
+ {t:'لا أزوّج ابنتي، لكن خذ حمولة حديد',cost:{gold:60},e:{horn:15},r:'وزن برهان الحديد بيده وهزّ رأسه. ليس ما أراده، لكنه احترام.'},
+ {t:'سيبارز غازي أقوى رجالك',req:'ghazi',ch:{p:.6,ok:{e:{horn:28,hap:3},r:'أسقط غازي البطل الجبلي في الجولة الثالثة. ضحك برهان: «رجالك منّا يا ملك».'},no:{e:{horn:-8,injure:['ghazi',2]},r:'انكسر ترس غازي وسقط. سيحتاج أسبوعين ليتعافى، وبرهان غادر ساخرًا.'}}},
+ {t:'أرْوَند لا تقايض بناتها',e:{horn:-15},r:'خرج برهان دون كلمة. صوت حذائه يتردّد في القاعة.'},
+]},
+asil:{who:'asil',w:[4,4],story:1,text:'القمر لا يكذب يا ملك. نريد معبدًا صغيرًا في العاصمة، ليرى الناس أن السحر ليس لعنة. وفي المقابل أخبرك بسرّ: الرماد الذي يزحف من الشرق ليس من نار. إنها أرضٌ تموت.',opts:[
+ {t:'ابنوا المعبد على نفقة التاج',cost:{gold:70},e:{moon:30,hap:-3,set:['temple','ashhint']},r:'تهامس بعض العامة خوفًا، لكنّ الرهبنة صارت في صفّك. وفتحت أسيل لسمر بابًا إلى سرّ الرماد.'},
+ {t:'أمنحكم الأرض، والبناء عليكم',e:{moon:10,set:['ashhint']},r:'قبلت أسيل بأدب. سرّ الرماد صار مهمّة يمكن لسمر أن تتقصّاها.'},
+ {t:'لا مكان للسحر قرب العرش',e:{moon:-15,hap:2},r:'أطفأت أسيل قنديلها في صمت ورحلت.'},
+]},
+queen:{who:'dima',w:[4,4],story:1,text:'سالار، أعرف أن العيون تراقبني حين أكتب رسائلي. لن أكذب عليك: أرسل ذهبًا من مالي الخاص إلى ميتمٍ في بلدتي. لكنّ البلاط يهمس بأن الملكة خائنة. افعل ما تراه.',opts:[
+ {t:'أثق بك، ولن أسمح لأحد بالهمس',e:{hap:3,set:['queentrust']},r:'أمسكت يدك. في القاعة، صمت المتهامسون.'},
+ {t:'اكتبي لأهلك عند النهر يدعموننا',e:{river:10},r:'ستصل رسالة الملكة إلى مِهران قبل القمر الجديد.'},
+ {t:'ستتحقق نوال بهدوء',req:'nawal',e:{clues:1,set:['queentrust']},r:'كانت الملكة صادقة. لكن نوال وجدت في موقد الرواق رسالة محترقة عليها أثر ختم: أسدٌ متوّج.'},
+]},
+plague:{who:'halima',w:[5,5],story:1,text:'الحمّى في قرية الطاحونة يا مولاي. سبعة أطفال في حرارة لا تنزل، والرجال يخافون الاقتراب. إن لم يأتِ أحد فستنتشر.',opts:[
+ {t:'أرسل سمر بأعشابها',req:'samar',e:{hap:8,pop:-2,set:['cured']},r:'سهرت سمر ثلاث ليالٍ. نجا الأطفال كلهم، والقرية تذكر اسمك في صلواتها.'},
+ {t:'اشترِ الدواء من التجار',cost:{gold:40},e:{hap:5,pop:-5,set:['cured']},r:'وصل الدواء متأخرًا قليلًا. فقدت القرية خمسة، ونجا الباقون.'},
+ {t:'اعزلوا القرية بالجنود',e:{hap:-6,pop:-10,set:['cured']},r:'توقّفت العدوى. لكنّ القرية لن تنسى الرماح على أبوابها.'},
+ {t:'لا نستطيع إنقاذ الجميع',e:{hap:-10,pop:-25,set:['plague'],follow:['plague2',2]},r:'أغلقت حليمة الباب خلفها بقوة. الحمّى تزحف إلى البيوت المجاورة.'},
+]},
+lina1:{who:'lina',w:[5,5],story:1,cond:()=>F('betrothed'),text:'أبي، رأيتُ جسّار عند البوابة. ليس سيئًا كما ظننت. لكن هل سألتني يومًا ماذا أريد أنا؟',opts:[
+ {t:'واجبكِ تجاه أرْوَند يسبق كل شيء',e:{set:['linacold']},r:'انحنت لينا كما تنحني الأميرات، لا كما تنحني البنات.'},
+ {t:'أعدكِ: بعد الحرب، القرار لكِ',e:{hap:2,set:['linatrust']},r:'ابتسمت لينا لأول مرة منذ أسابيع.'},
+]},
+lina2:{who:'lina',w:[5,5],story:1,cond:()=>!F('betrothed'),text:'أبي، لا أريد أن أبقى زينةً في القصر. أرسلني سفيرةً. أستطيع أن أخدم أرْوَند بلساني لا بخاتم زواج.',opts:[
+ {t:'اذهبي إلى معبد القمر',e:{moon:20,set:['linatrust']},r:'سافرت لينا إلى المعبد. الكاهنات أحببن حدّة ذهنها.'},
+ {t:'اذهبي إلى مرفأ بني النهر',e:{river:20,set:['linatrust']},r:'أبهرت لينا تجّار النهر بحساباتها قبل كلماتها.'},
+ {t:'ابقي هنا حيث أراكِ آمنة',e:{hap:1},r:'أغلقت لينا باب غرفتها بهدوء.'},
+]},
+spy:{who:'guard',w:[6,6],story:1,text:'مولاي، أمسكنا هذا الرجل عند البوابة الشرقية. كان يحمل رسالة أحرق نصفها، لكنّ الختم بقي واضحًا: أسدٌ متوّج.',opts:[
+ {t:'استجوبوه حتى يتكلّم',e:{clues:1,hap:-2},r:'اعترف بأن الرسالة متجهة إلى معسكر بهرام. لم يعرف اسم المرسِل، لكنه وصف خاتمًا بأسد.'},
+ {t:'أطلقوه، وستتبعه نوال',req:'nawal',e:{clues:2},r:'قاد الرجلُ نوالَ إلى نُزُلٍ قرب البرج الشرقي، حيث كان رجال رستم ينتظرونه.'},
+ {t:'اطردوه خارج الحدود علنًا',e:{hap:4},r:'تفرّج الناس عليه يُطرد. الرسالة احترقت كاملة في الموقد.'},
+]},
+prisoner:{who:'jailer',w:[6,6],story:1,cond:()=>F('jailed'),text:'رسول بهرام في القبو يطلب أن يرى الملك. يقول إن عنده ما يستحق الاستماع.',opts:[
+ {t:'أحضروه. سأسمع',e:{clues:1,set:['scouted']},r:'قال الرسول: «دمٌ ملكيّ سيفتح لكم البوابة من الداخل». ثم وصف جيش بهرام بدقة جندي متقاعد.'},
+ {t:'أطلقوه هديةً لبهرام',e:{enemy:-20,hap:-3},r:'عاد الرسول إلى سيّده. ربما يلين قلب بهرام قليلًا.'},
+ {t:'دعوه يتعفّن',e:{},r:'لا شيء تغيّر، إلا أن القبو صار أكثر صمتًا.'},
+]},
+refugees:{who:'refugee',w:[7,7],story:1,text:'ثلاثون منّا عبروا الحدود. أرضنا تتشقّق والآبار صارت ملحًا. بهرام لا يغزوكم طمعًا يا ملك، بل لأن الجوع يطارد شعبه.',opts:[
+ {t:'افتحوا لهم البوابة',cost:{food:10},e:{pop:30,moon:10,hap:-2,set:['refugees']},r:'ثلاثون فمًا جديدًا. لكنهم يحملون قصصًا عن أرض الرماد لا يعرفها أحد هنا.'},
+ {t:'أطعموهم وأعيدوهم بأمان',cost:{food:20},e:{moon:5,set:['refugees']},r:'عادت مريم ومعها الخبز. ستحكي لأهلها عن ملكٍ في الغرب لم يغلق قلبه.'},
+ {t:'خبزنا لأهلنا أولًا',e:{moon:-10,hap:2},r:'رحلوا شرقًا مع الريح.'},
+]},
+rustam2:{who:'rustam',w:[7,7],story:1,cond:()=>!F('exposed'),text:'أخي، رجال البرج يحتاجون خيولًا. خمسون قطعة ذهب فقط، وسأرى الرماد قبل أن يرانا.',opts:[
+ {t:'خذ الذهب',cost:{gold:50},e:{enemy:20,set:['funded']},r:'أخذ رستم الكيس دون أن يعدّه.'},
+ {t:'ليس الآن، الخزينة فارغة',e:{},r:'«كما تشاء يا ملك»، قالها رستم، وكأن اللقب يؤلمه.'},
+ {t:'واجهه بالأدلة',need:()=>S.clues>=2,hint:'يتطلب دليلين على الأقل',e:{set:['exposed'],hap:5},r:'وضعتَ الرسالة المحترقة والخاتم أمامه. حاول أن يضحك، ثم لم يستطع. رستم الآن في القيد.'},
+]},
+loan:{who:'farrukh',w:[8,8],cond:()=>F('loan'),text:'حان موعد سداد القرض يا مولاي: مئة قطعة ذهب. اللورد مِهران رجل صبور، لكنّ صبره له حدود.',opts:[
+ {t:'ادفع المئة',cost:{gold:100},e:{river:10},r:'ختم فرّوخ الصكّ بالشمع الأزرق. ديونك نظيفة.'},
+ {t:'اطلب مهلة حتى انتهاء الحرب',e:{river:-20},r:'قبل فرّوخ على مضض. الثقة تشقّقت.'},
+ {t:'لن ندفع وبهرام على الأبواب',e:{river:-40},r:'ستصل هذه الكلمات إلى مِهران الليلة، وسيتذكّرها يوم الحصار.'},
+]},
+pirates:{who:'mehran',w:[8,8],story:1,text:'جئتُ بنفسي يا ملك. قراصنة يحرقون سفننا عند المصبّ. أعطني خمسة عشر جنديًا لأسبوعين، وسأردّ الجميل.',opts:[
+ {t:'خذ خمسة عشر جنديًا',cost:{soldiers:15},e:{river:20,follow:['piratesback',2]},r:'أبحر الجنود جنوبًا. سيعود معظمهم بعد أسبوعين.'},
+ {t:'سيقودهم غازي بنفسه',req:'ghazi',ch:{p:.7,ok:{e:{river:25,hap:2},r:'أحرق غازي سفينة القراصنة الكبرى في ليلة واحدة. مِهران يقسم أنه مدين لك.'},no:{e:{river:5,injure:['ghazi',1]},r:'هرب القراصنة، وأصيب غازي بسهم في كتفه.'}}},
+ {t:'جنودي للحصار',e:{river:-15},r:'شدّ مِهران عباءته وغادر.'},
+]},
+envoy2:{who:'herald',w:[9,9],story:1,text:'سيدي بهرام يعرض فرصة أخيرة: سلّمه كهنة القمر، فهو يقول إنهم سرقوا ماء أرضه بسحرهم، وسيحوّل جيشه عنك.',opts:[
+ {t:'خذوا الكهنة',e:{moon:-60,enemy:-60,hap:-8,set:['betrayedmoon']},r:'سيقت أسيل وتلاميذها شرقًا. الرهبنة لن تغفر، والشعب ينظر إليك بخوف.'},
+ {t:'أرْوَند لا تبيع أحدًا',e:{hap:4,moon:8},r:'هزّ الرسول رأسه: «إذن نلتقي عند الأسوار».'},
+ {t:'قل لسيّدك: الطعام بدل الحرب',need:()=>F('ashsecret')&&F('refugees'),hint:'يتطلب معرفة سرّ الرماد واستقبال اللاجئين',e:{set:['peace']},r:'سكت الرسول طويلًا. «سأحمل كلامك». عند الحصار ستحتاج ١٢٠ طعامًا لتفي بوعدك.'},
+]},
+towerreport:{who:'guard',w:[1,12],text:'مولاي، عدتُ من البرج. رأيت الأمير رستم يلتقي فرسانًا بلا رايات عند منتصف الليل. ورأيتُ ختمه على رسالة ذهبت شرقًا.',opts:[
+ {t:'أحسنت يا سليم',e:{clues:2},r:'صار لديك ما يكفي لتسأل أخاك أسئلة صعبة.'},
+]},
+rustamjail:{who:'rustam',w:[10,10],story:1,cond:()=>F('exposed'),text:'(يُسحب في القيود) أخي... كنتُ أظنّ أن بهرام سيترك أرْوَند لي إن فتحتُ البوابة. اقتلني إن شئت، لكن اسمعني: رجالي في البرج سيقاتلون لك إن عفوت.',opts:[
+ {t:'انفه خارج المملكة',e:{hap:3},r:'رحل رستم شرقًا بلا تاج ولا خاتم.'},
+ {t:'اعفُ عنه ليقاتل في الصفّ الأول',e:{soldiers:20,set:['pardoned'],hap:-3},r:'عشرون فارسًا من البرج انضمّوا إلى جيشك. لكنّ بعض الناس يرون العفو ضعفًا.'},
+ {t:'يبقى في القبو حتى ينتهي كل شيء',e:{},r:'أُغلق الباب الحديدي.'},
+]},
+rustam3:{who:'rustam',w:[10,10],story:1,cond:()=>!F('exposed'),text:'أخي، دعني أقود الطليعة يوم الحصار. سأكون أول من يلقى بهرام.',opts:[
+ {t:'الطليعة لك',e:{set:['vanguard']},r:'انحنى رستم وابتسم ابتسامة رجل ربح شيئًا.'},
+ {t:'ابقَ بجانبي حيث أراك',e:{},r:'«كما تشاء»، قالها وعيناه على الباب الشرقي.'},
+ {t:'واجهه بكل ما تعرف',need:()=>S.clues>=3,hint:'يتطلب ثلاثة أدلة',e:{set:['exposed'],hap:6},r:'الرسائل، الخاتم، شهادة الشهود. انهار رستم أمام البلاط كله. الخائن في القيد.'},
+]},
+horncall:{who:'burhan',w:[10,10],story:1,text:()=>S.rel.horn>=70?'الجبال جاهزة يا ملك. ثمانون رجلًا يشحذون فؤوسهم. قل لي فقط متى.':'رجالي يسألون: لماذا نموت من أجل ملك الوادي؟ أعطني سببًا يا سالار.',opts:[
+ {t:'أرسلوا لهم مئونة الشتاء',cost:{food:30},e:{horn:20},r:'الجبال تأكل من خبزك الآن.'},
+ {t:'ثمانون قطعة ذهب لسلاحهم',cost:{gold:80},e:{horn:25},r:'الحديد لغة يفهمها أهل القرن.'},
+ {t:'شرفهم يكفي سببًا',e:{horn:-5},r:'ضحك برهان ضحكة قصيرة لا فرح فيها.'},
+]},
+warcouncil:{who:'ghazi',w:[11,11],story:1,text:()=>`مولاي، بهرام على بُعد أسبوع. ${F('scouted')?'كشّافتنا عدّت جيشه: '+A(enemyPower())+' مقاتل محسوبًا بقوته.':'لا نعرف عدده بالضبط، لم نستطلعه.'} اختر خطة المعركة، وسأنفّذها حتى آخر رمح.`,opts:[
+ {t:'نتحصّن خلف الأسوار',e:{plan:'walls'},r:'كل مستوى أسوار سيحسب ضعفين يوم الحصار.'},
+ {t:'كمين في الغابة السوداء',need:()=>F('scouted')&&S.ret.raad.inj<=S.week,hint:'يتطلب استطلاع جيش بهرام ووجود رعد سالمًا',e:{plan:'ambush'},r:'رعد يعرف كل جذع في الغابة. جيشك سيقاتل بقوة أكبر بثلث.'},
+ {t:'غارة ليلية على معسكرهم',need:()=>S.ret.nawal.on,hint:'يتطلب انضمام نوال',e:{plan:'raid'},r:'نوال ستفتح الطريق في الظلام. جيش بهرام سيصل منهكًا.'},
+ {t:'نلقاهم في الميدان المفتوح',e:{plan:'field'},r:'لا خدعة ولا حيلة. سيف أمام سيف.'},
+]},
+siege:{who:'bahram',w:[12,12],story:1,text:()=>`أنا بهرام. جئتُ كما وعدت. ${F('peace')?'سمعتُ أنك عرضت الخبز بدل الدم. أرني إن كنت صادقًا.':'خلفي '+A(enemyPower())+' سيفًا وجوع أرضٍ كاملة. افتح البوابة أو أحطّمها.'}`,opts:[
+ {t:'أعطه مئة وعشرين من الطعام، وليكن سلامًا',need:()=>F('peace')&&S.food>=120,hint:'يتطلب عرض السلام و١٢٠ طعامًا',cost:{food:120},e:{set:['peacedone']},r:'end'},
+ {t:'إلى الأسوار! أرْوَند لا تُفتح',e:{set:['fight']},r:'end'},
+]},
+/* follow-ups */
+farmers:{who:'farmer',w:[1,12],text:'عدنا يا مولاي، ومعي نصف القرية. الحقول تتشقّق والأطفال يشربون ماءً طينيًا. لن نرحل هذه المرة بلا جواب.',opts:[
+ {t:'خمسة وأربعون ذهبًا للآبار، الآن',cost:{gold:45},e:{hap:3,set:['wells']},r:'تأخّرت، لكنك فعلت. الآبار تُحفر.'},
+ {t:'وعدٌ ملكيّ: بعد الحصاد',e:{hap:-5},r:'الوعود لا تروي أحدًا.'},
+ {t:'فرّقوهم بالجنود',e:{hap:-10},r:'تفرّق الحشد. لكنّ الغضب لم يتفرّق.'},
+]},
+plague2:{who:'halima',w:[1,12],text:'الحمّى وصلت إلى العاصمة يا مولاي. لم يعد الأمر قرية واحدة.',opts:[
+ {t:'سمر، أنقذيهم',req:'samar',e:{hap:5,pop:-5,set:['cured']},r:'أوقفت سمر الحمّى عند السوق الكبير.'},
+ {t:'خمسون ذهبًا للأطباء',cost:{gold:50},e:{pop:-10,set:['cured']},r:'كلّف الأمر كثيرًا، لكنها توقّفت.'},
+ {t:'أغلقوا الأبواب وانتظروا',e:{pop:-30,hap:-12},r:'نجت أرْوَند. ليس كل أهلها.'},
+]},
+piratesback:{who:'ghazi',w:[1,12],text:'عاد رجالنا من المصبّ يا مولاي. ثلاثة لم يعودوا. مِهران يرسل تحيّاته ورسالة شكر مختومة.',opts:[{t:'رحمهم الله، وأهلًا بالباقين',e:{soldiers:12},r:'اثنا عشر جنديًا عادوا إلى الثكنات.'}]},
+/* pool */
+bandits:{who:'farmer',pool:1,w:[2,10],text:'عصابة الذئاب نهبت مخزن قريتنا يا مولاي. أخذوا القمح وضربوا الحارس العجوز.',opts:[
+ {t:'غازي وعشرة رجال يطاردونهم',req:'ghazi',ch:{p:.75,ok:{e:{hap:6,food:12,set:['banditsdone']},r:'عاد غازي بالقمح ورؤوس العصابة مقيّدة.'},no:{e:{soldiers:-8,injure:['ghazi',1],set:['bandits']},r:'نصب الذئاب كمينًا. فقدنا ثمانية رجال.'}}},
+ {t:'عوّضوا القرية من الخزينة',cost:{gold:30},e:{hap:2,set:['bandits']},r:'القرية أكلت، لكنّ الذئاب ما زالوا في الغابة.'},
+ {t:'لكلّ قرية حرّاسها',e:{hap:-5,food:-10,set:['bandits']},r:'الذئاب سيعودون، وهم يعرفون أن أحدًا لن يلاحقهم.'},
+]},
+bard:{who:'bard',pool:1,w:[1,11],text:'يا ملك الوادي! كتبتُ أغنية عن شجاعتك في وجه الرماد. خمس عشرة قطعة وستُغنّى في كل حانة من هنا إلى النهر.',opts:[
+ {t:'غنِّ لنا',cost:{gold:15},e:{hap:5},r:'بعد يومين كان الأطفال يغنّونها في الأزقّة.'},
+ {t:'الأغاني لا تصدّ جيشًا',e:{hap:-1},r:'غنّاها مجانًا على أي حال، لكنه غيّر نهايتها.'},
+]},
+widow:{who:'widow',pool:1,w:[2,11],text:'زوجي مات على الحدود في الصيف الماضي. وعدونا براتب لم يصل قط. عندي ثلاثة أطفال وابنٌ في السادسة عشرة.',opts:[
+ {t:'عشرون ذهبًا، ووعد براتب',cost:{gold:20},e:{hap:4},r:'بكت أم ناصر. انتشر الخبر بين عائلات الجنود.'},
+ {t:'ابنك يُقبل في الحرس براتب كامل',e:{soldiers:1,hap:2},r:'ناصر الصغير يحمل رمحًا أطول منه.'},
+ {t:'كثيرات مثلك يا أمّاه',e:{hap:-2},r:'خرجت دون أن تلتفت.'},
+]},
+tinker:{who:'tinker',pool:1,w:[3,10],text:'صمّمتُ قوسًا آليًّا يطلق السهم بقوة عشرة رجال. أربعون ذهبًا وأصنع منها ما يكفي لأسوارك.',opts:[
+ {t:'اصنعها',cost:{gold:40},e:{set:['crossbows']},r:'الأقواس الآلية ستضيف ثلاثين إلى قوّتك يوم الحصار.'},
+ {t:'ليجرّبها غازي أولًا',req:'ghazi',ch:{p:.5,ok:{e:{set:['crossbows']},r:'أصاب غازي الهدف من مئة خطوة. أمر بصنعها فورًا، والمعلّم تنازل عن نصف الأجر.'},no:{e:{},r:'انكسر الوتر في الطلقة الثانية. غادر المعلّم محرجًا.'}}},
+ {t:'لا وقت للألعاب',e:{},r:'لملم دانيال رسومه.'},
+]},
+pilgrim:{who:'pilgrim',pool:1,w:[1,11],text:'أنا في طريقي إلى معبد القمر، ونفد زادي. قليل من الطعام يكفيني، والقمر يتذكّر المحسنين.',opts:[
+ {t:'أعطوه عشرة من الطعام',cost:{food:10},e:{moon:6},r:'بارك الحاجّ القاعة ومضى.'},
+ {t:'في المطبخ خبز بائت، خذه',e:{moon:2},r:'شكرك بأدب.'},
+]},
+hunter:{who:'hunter',pool:1,w:[1,11],text:'اصطدتُ ثلاثة أيائل يا مولاي. واحد منها هديّة للقصر، والباقي أبيعه إن شئت.',opts:[
+ {t:'نقبل الهدية بامتنان',e:{food:15,hap:1},r:'عشاء القصر الليلة لحم أيّل.'},
+ {t:'نشتري الصيد كله بعشرين ذهبًا',cost:{gold:20},e:{food:35},r:'امتلأت المخازن قليلًا.'},
+]},
+grain:{who:'merchant',pool:1,w:[4,11],text:'قمح من الجنوب، نظيف وجافّ. خمسون ذهبًا لخمسة وأربعين كيسًا. السعر سيرتفع حين يقترب بهرام.',opts:[
+ {t:'نشتري',cost:{gold:50},e:{food:45},r:'ستصل العربات غدًا.'},
+ {t:'لتساومه نوال',req:'nawal',e:{gold:-30,food:45},need:()=>S.gold>=30,hint:'يتطلب ٣٠ ذهبًا',r:'لا أحد يعرف ما همست به نوال للتاجر، لكنّه خفّض السعر إلى ثلاثين.'},
+ {t:'ليس الآن',e:{},r:'ابتسم قاسم: «ستتذكّر هذا السعر».'},
+]},
+merc:{who:'merc',pool:1,w:[5,11],text:'سريّة الحديد. ثلاثون سيفًا لا يسألون عن السبب. سبعون ذهبًا ونقاتل حتى نهاية الحصار.',opts:[
+ {t:'أنتم في الخدمة',cost:{gold:70},e:{soldiers:30},r:'ثلاثون مقاتلًا مدرّبًا انضمّوا إلى جيشك.'},
+ {t:'المرتزقة يبيعون ولاءهم مرتين',e:{},r:'هزّت رزان كتفيها: «بهرام يدفع أيضًا».'},
+]},
+thief:{who:'thief',pool:1,w:[2,11],text:'(الحارس) أمسكناه يسرق رغيفين من الفرن الملكي يا مولاي. القانون يقول: يُجلد.',opts:[
+ {t:'اعفُ عنه وأعطه الرغيفين',e:{hap:3,food:-2},r:'الناس يقولون إن الملك يعرف الجوع.'},
+ {t:'القانون قانون',e:{hap:-2},r:'جُلد الصبيّ في الساحة. لم يسرق أحد بعدها، ولم يبتسم أحد أيضًا.'},
+ {t:'نوال تحتاج يدًا خفيفة',req:'nawal',e:{set:['thiefagent']},r:'صار للظلّ عينٌ جديدة. مهمّات نوال أنجح من الآن.'},
+]},
+smith:{who:'smith',pool:1,w:[4,11],text:'رماح جيشك صدئة يا مولاي. أعطني خمسة وثلاثين ذهبًا للحديد وسأعيد شحذ كل نصل في الثكنات.',opts:[
+ {t:'اشحذها كلها',cost:{gold:35},e:{set:['smith']},r:'أسلحة جيدة تضيف عشرين إلى قوّتك يوم الحصار.'},
+ {t:'الصدأ لا يقتل أحدًا',e:{},r:'بل يقتل، تمتم بكر وهو يخرج.'},
+]},
+boy:{who:'boy',pool:1,w:[2,10],text:'يا ملك! رأيت تنّينًا في الغابة السوداء! أخضر وكبير وأكل خروف جارنا!',opts:[
+ {t:'رعد، اذهب وانظر',req:'raad',e:{food:12,hap:1},r:'كان «التنّين» سحليةً عملاقة. أكل القصر منها أسبوعًا، وصار يونس بطل القرية.'},
+ {t:'هذه قصة رائعة يا يونس',e:{hap:1},r:'ركض يونس يحكيها لكل من يقابله.'},
+]},
+noble:{who:'noble',pool:1,w:[3,11],text:'جلالتك، ضياعي تدفع ضرائب أكثر من قرية كاملة. أعفني منها هذا العام، وسأقدّم للخزينة هديّة شخصية.',opts:[
+ {t:'اتفقنا',e:{gold:35,hap:-4},r:'أخذت الخزينة الهديّة. العامة سمعوا بالصفقة.'},
+ {t:'الضريبة على الجميع',e:{hap:3},r:'احمرّ وجه قيصر وانسحب.'},
+]},
+festival:{who:'halima',pool:1,w:[3,8],text:'الناس يريدون مهرجان المطر كما كان أجدادهم. أغانٍ ونار وطعام. ربما لا تمطر، لكنّ القلوب ستبتلّ.',opts:[
+ {t:'ليكن مهرجانًا',cost:{gold:25,food:10},e:{hap:8},r:'رقصت المدينة حتى الفجر.'},
+ {t:'لا مهرجانات في سنة العطش',e:{hap:-2},r:'مرّ الشهر صامتًا.'},
+]},
+novices:{who:'pilgrim',pool:1,w:[5,11],cond:()=>F('temple'),text:'المعبد الجديد يحتاج زيت القناديل. خمس عشرة قطعة تكفي حتى نهاية الموسم.',opts:[
+ {t:'زيت للقناديل',cost:{gold:15},e:{moon:8},r:'يشعّ المعبد كل ليلة الآن.'},
+ {t:'دعوا القمر يضيء لكم',e:{moon:-3},r:'انحنى الراهب بخيبة.'},
+]},
+deserters:{who:'ghazi',pool:1,w:[8,11],text:'مولاي، خمسة عشر رجلًا يريدون الهرب ليلًا. يقولون إن بهرام لا يُهزم. الخوف ينتشر في الثكنات.',opts:[
+ {t:'سأخطب فيهم بنفسي',need:()=>S.hap>=50,hint:'يتطلب رضا ٥٠ فأكثر',e:{hap:2},r:'خرجتَ إلى الثكنات بلا تاج. بقي الجميع.'},
+ {t:'مكافأة ثلاثين ذهبًا لمن يبقى',cost:{gold:30},e:{},r:'بقي الرجال. بعضهم من أجل الذهب.'},
+ {t:'دعهم يرحلون',e:{soldiers:-15},r:'خمسة عشر سريرًا فارغًا في الصباح.'},
+]},
+};
+
+/* ---------- missions ---------- */
+const LOC={
+ castle:{n:'القلعة',x:150,y:105},village:{n:'قرية الطاحونة',x:92,y:138},forest:{n:'الغابة السوداء',x:205,y:158},
+ river:{n:'مرفأ بني النهر',x:52,y:74},horn:{n:'جبال القرن',x:132,y:30},moon:{n:'معبد القمر',x:38,y:168},ash:{n:'أرض الرماد',x:280,y:84},
+};
+const M=[
+ {id:'train',loc:'castle',n:'تدريب المجنّدين',d:'تحويل فلاحين إلى رماحين.',sk:'war',cost:{gold:20},dur:1,ok:()=>({soldiers:15}),no:()=>({soldiers:5}),okT:'تخرّج خمسة عشر رماحًا',noT:'صمد خمسة فقط حتى النهاية'},
+ {id:'fortify',loc:'castle',n:'ترميم الأسوار',d:'كل مستوى يضيف ثلاثين يوم الحصار (الحد ٣).',sk:'war',cost:{gold:50},dur:2,cond:()=>S.fort<3,ok:()=>({fort:1}),no:()=>({gold:20}),okT:'ارتفعت الأسوار طبقة',noT:'انهار جزء من الحائط، واستُرجع بعض المال'},
+ {id:'whispers',loc:'castle',n:'تتبّع الهمسات',d:'من يكتب إلى الشرق ليلًا؟',sk:'shadow',dur:1,cond:()=>S.ret.nawal.on&&!F('exposed'),ok:()=>({clues:1}),no:()=>({}),okT:'وُجد دليل جديد على الخائن',noT:'الأثر برد قبل أن يُلتقط'},
+ {id:'hunt',loc:'forest',n:'رحلة صيد',d:'لحمٌ للمخازن.',sk:'wild',dur:1,ok:()=>({food:22}),no:()=>({food:6}),okT:'عادت العربة محمّلة',noT:'صيدٌ شحيح'},
+ {id:'wolves',loc:'forest',n:'مطاردة عصابة الذئاب',d:'العصابة ما زالت تنهب القرى.',sk:'war',dur:1,risk:2,cond:()=>F('bandits')&&!F('banditsdone'),ok:()=>({hap:6,food:15,set:['banditsdone']}),no:()=>({}),okT:'تشتّتت العصابة واستُعيد القمح',noT:'أفلت الذئاب'},
+ {id:'aid',loc:'village',n:'العمل مع القرويين',d:'إصلاح السواقي والبيوت.',sk:'talk',dur:1,ok:()=>({hap:6}),no:()=>({hap:2}),okT:'القرية تشكر التاج',noT:'عمل قليل وكلام كثير'},
+ {id:'cure',loc:'village',n:'إيقاف الحمّى',d:'الحمّى تنتشر بين البيوت.',sk:'magic',dur:1,cond:()=>F('plague')&&!F('cured'),ok:()=>({hap:8,set:['cured']}),no:()=>({pop:-8}),okT:'انحسرت الحمّى',noT:'الحمّى أقوى من الأعشاب هذه المرة'},
+ {id:'dip_river',loc:'river',n:'سفارة إلى بني النهر',d:'هدايا وكلام طيّب.',sk:'talk',cost:{gold:15},dur:1,ok:()=>({river:12}),no:()=>({river:3}),okT:'مِهران راضٍ',noT:'استقبالٌ بارد'},
+ {id:'dip_horn',loc:'horn',n:'رفقة المحاربين',d:'أهل القرن يحترمون من يقاتل معهم.',sk:'war',cost:{gold:15},dur:1,ok:()=>({horn:12}),no:()=>({horn:3}),okT:'شُرب نخب أرْوَند في الجبال',noT:'لم يُترك أثر'},
+ {id:'dip_moon',loc:'moon',n:'التأمّل مع الكهنة',d:'الرهبنة تقدّر من يفهم السحر.',sk:'magic',cost:{gold:15},dur:1,ok:()=>({moon:12}),no:()=>({moon:3}),okT:'أسيل تذكرك في صلواتها',noT:'صمتٌ مهذّب'},
+ {id:'scout',loc:'ash',n:'استطلاع جيش بهرام',d:'معرفة عدد العدو تفتح خطة الكمين.',sk:'wild',dur:1,risk:1,cond:()=>!F('scouted'),ok:()=>({set:['scouted']}),no:()=>({}),okT:'جيش بهرام صار مكشوفًا',noT:'طاردتهم دوريات الرماد'},
+ {id:'sabotage',loc:'ash',n:'إحراق مؤن العدو',d:'ينقص جيش بهرام ثلاثين (مرتان كحد أقصى).',sk:'shadow',dur:2,risk:2,cond:()=>S.sabotage<2&&S.week>=4,ok:()=>{S.sabotage++;return{enemy:-30}},no:()=>({}),okT:'احترقت مخازن بهرام',noT:'كُشف المتسلّل وهرب بصعوبة'},
+ {id:'ashsecret',loc:'ash',n:'سرّ الأرض الميتة',d:'ما الذي يقتل أرض الرماد؟',sk:'magic',dur:2,risk:1,cond:()=>F('ashhint')&&!F('ashsecret'),ok:()=>({set:['ashsecret']}),no:()=>({}),okT:'اكتُشف أن ينابيع الشرق تسمّمت بالملح، وأن بهرام يغزو ليُطعم شعبه',noT:'عاصفة رماد أعادت الباحث'},
+];
+function chance(m,k){let p=.3+RET[k].sk[m.sk]*.2;if(k==='nawal'&&F('thiefagent'))p+=.1;return clamp(p,.1,.95)}
+
+/* ---------- economy ---------- */
+const TAX=[{n:'منخفضة',m:.6,h:3},{n:'عادية',m:1,h:0},{n:'مرتفعة',m:1.5,h:-6}];
+function econ(){
+ const goldIn=Math.round((15+S.pop*.08+S.hap*.15)*TAX[S.tax].m)+(S.rel.river>=60?10:0)-(F('tolls')?5:0);
+ const upkeep=Math.ceil(S.soldiers/6);
+ const drought=S.week>=3&&!F('wells')?6:0;
+ const foodIn=17-drought;
+ const foodUse=Math.ceil((S.pop/10+S.soldiers/12)*(S.ration?.75:1));
+ return{goldIn,upkeep,foodIn,foodUse,drought};
+}
+function enemyPower(){let e=S.enemy;if(!F('exposed'))e+=F('vanguard')?60:F('tower')?35:15;if(F('funded')&&!F('exposed'))e+=0;if(S.rel.moon>=70&&!F('betrayedmoon'))e*=.8;if(S.plan==='raid')e*=.85;return Math.round(e)}
+function myPower(){const parts=[];let p=S.soldiers;if(S.plan==='ambush')p*=1.33;if(S.plan==='field')p*=1;parts.push(['جنودك'+(S.plan==='ambush'?' (كمين ×١٫٣٣)':''),Math.round(p)]);
+ if(S.rel.horn>=70)parts.push(['محاربو أهل القرن',80]);
+ if(S.rel.river>=70)parts.push(['بحّارة بني النهر',40]);
+ if(S.fort)parts.push(['الأسوار'+(S.plan==='walls'?' (تحصّن ×٢)':''),S.fort*30*(S.plan==='walls'?2:1)]);
+ if(F('crossbows'))parts.push(['الأقواس الآلية',30]);
+ if(F('smith'))parts.push(['نصال مشحوذة',20]);
+ return{total:parts.reduce((a,b)=>a+b[1],0),parts}}
+
+/* ---------- apply effects ---------- */
+function apply(e){const out=[];if(!e)return out;
+ for(const k of['gold','food','hap','soldiers','pop','fort','enemy','clues'])if(e[k]){
+  const before=S[k];let v=S[k]+e[k];
+  if(k==='hap')v=clamp(v,0,100);else if(k==='fort')v=clamp(v,0,3);else v=Math.max(0,v);
+  S[k]=v;if(v!==before)out.push([k,v-before])}
+ for(const f of['river','horn','moon'])if(e[f]){const b=S.rel[f];S.rel[f]=clamp(b+e[f],0,100);if(S.rel[f]!==b)out.push([f,S.rel[f]-b])}
+ if(e.set)e.set.forEach(f=>S.flags[f]=1);
+ if(e.unlock){S.ret[e.unlock].on=1;out.push(['unlock',e.unlock])}
+ if(e.injure){S.ret[e.injure[0]].inj=S.week+e.injure[1];out.push(['injure',e.injure[0]])}
+ if(e.follow)S.follow.push({id:e.follow[0],w:S.week+e.follow[1]});
+ if(e.plan)S.plan=e.plan;
+ floatDeltas(out);return out}
+function chipsFor(out){return out.map(([k,v])=>{
+ if(k==='unlock')return`<span class="chip good">انضمّ ${N[v][0]}</span>`;
+ if(k==='injure')return`<span class="chip bad">أُصيب ${N[v][0]}</span>`;
+ const good=k==='enemy'?v<0:v>0;return`<span class="chip ${good?'good':'bad'}">${ICON[k]?ic(k):''}${STATN[k]} ${sg(v)}</span>`}).join('')}
+function costChips(c){return Object.entries(c||{}).map(([k,v])=>`<span class="chip cost">${ic(k)}−${A(v)} ${STATN[k]}</span>`).join('')}
+
+/* ---------- sound ---------- */
+let AC=null,soundOn=true;
+function beep(f=440,d=.06,type='square',vol=.04){if(!soundOn)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.value=vol;o.connect(g);g.connect(AC.destination);const t=AC.currentTime;g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.start(t);o.stop(t+d)}catch(e){}}
+const coin=()=>{beep(988,.07);setTimeout(()=>beep(1318,.1),70)};
+
+/* ---------- HUD ---------- */
+function hud(){
+ const ch=chapter(S.week);
+ const st=[['gold',S.gold,S.gold<20],['food',S.food,S.food<25],['hap',S.hap,S.hap<30],['soldiers',S.soldiers,S.soldiers<30],['pop',S.pop,false],['fort',S.fort+'/٣',false]];
+ $('#hud').innerHTML=`<div class="when">الأسبوع ${A(S.week)} من ١٢<small>${CH[ch][0]}: ${CH[ch][1]}</small></div>
+ <div class="stats">${st.map(([k,v,low])=>`<div class="stat${low?' low':''}" id="st-${k}" title="${STATN[k]}">${ic(k)}<b>${typeof v==='number'?A(v):v.replace(/\d/g,d=>AD[d])}</b><span>${STATN[k]}</span></div>`).join('')}
+ <div class="stat" title="جيش بهرام">${ic('enemy')}<b>${F('scouted')?A(enemyPower()):'؟'}</b><span>بهرام</span></div>
+ <div class="stat" title="أدلة الخيانة">${ic('clue')}<b>${A(S.clues)}</b><span>أدلة</span></div></div>
+ <div class="hbtns"><button class="px small" id="bFac">الفصائل والحرب</button><button class="px small" id="bLog">السجل</button><button class="px small" id="bHelp" aria-label="طريقة اللعب">؟</button><button class="px small" id="bSnd" aria-label="الصوت">${soundOn?'♪':'✕'}</button></div>`;
+ $('#bFac').onclick=showFactions;$('#bLog').onclick=showLog;$('#bHelp').onclick=showHelp;$('#bSnd').onclick=()=>{soundOn=!soundOn;hud()};
+}
+function floatDeltas(out){requestAnimationFrame(()=>{hud();out.forEach(([k,v])=>{const el=$('#st-'+k);if(!el)return;const s=document.createElement('i');s.className='float '+(v>0?'pos':'neg');s.textContent=sg(v);el.appendChild(s);setTimeout(()=>s.remove(),1500)})})}
+
+/* ---------- scene ---------- */
+const sc=$('#scene'),g=sc.getContext('2d');g.imageSmoothingEnabled=false;
+const BR=['#2e2230','#30243a','#2a1f2d','#33263a','#2c2133','#2f2436','#281d2a','#31253a'];
+let actor=null,dust=[];for(let i=0;i<40;i++)dust.push({x:Math.random()*320,y:Math.random()*150,v:.05+Math.random()*.12});
+function sky(){const ch=chapter(S?S.week:1);return ch===1?['#f0c66a','#e39a4a']:ch===2?['#9a7ac0','#5a4a8a']:['#c4552b','#5a2a20']}
+function drawScene(t){
+ const W=320,H=180,night=S&&S.phase==='report';
+ g.fillStyle='#1c1520';g.fillRect(0,0,W,H);
+ for(let y=0;y<146;y+=8){const off=(y/8)%2?8:0;for(let x=-off;x<W;x+=16){g.fillStyle=BR[((x*7+y*13)>>>0)%8];g.fillRect(x+1,y+1,14,6)}}
+ const [s1,s2]=sky();
+ for(const wx of[104,160,216]){g.fillStyle='#120d14';g.fillRect(wx-11,26,22,50);g.fillRect(wx-9,22,18,4);g.fillRect(wx-6,20,12,2);
+  const gr=g.createLinearGradient(0,28,0,74);gr.addColorStop(0,night?'#1a2240':s1);gr.addColorStop(1,night?'#0a0e20':s2);g.fillStyle=gr;g.fillRect(wx-9,28,18,46);g.fillRect(wx-7,24,14,4);g.fillRect(wx-4,22,8,2);
+  if(night){g.fillStyle='#e8f0ff';g.fillRect(wx-3+(wx%5),34,1,1);g.fillRect(wx+4,44,1,1)}
+  if(chapter(S?S.week:1)>=3){g.fillStyle='rgba(200,190,180,.7)';for(let i=0;i<4;i++){g.fillRect(wx-8+((t/40+i*13+wx)%16),28+((t/25+i*11)%44),1,1)}}
+  g.fillStyle='#120d14';g.fillRect(wx-1,22,2,54);g.fillRect(wx-9,50,18,2);g.fillStyle='#4a3a4e';g.fillRect(wx-12,76,24,3);
+  if(!night){g.save();g.globalAlpha=.07;g.fillStyle=s1;g.beginPath();g.moveTo(wx-9,30);g.lineTo(wx+9,30);g.lineTo(wx-14,150);g.lineTo(wx-50,150);g.closePath();g.fill();g.restore()}}
+ for(const bx of[132,188]){const sw=Math.round(Math.sin(t/900+bx)*1);g.fillStyle='#e3b54e';g.fillRect(bx-6,14,13,2);g.fillStyle='#8a1f30';g.fillRect(bx-5+sw,16,11,36);g.fillRect(bx-5+sw,52,4,4);g.fillRect(bx+2+sw,52,4,4);
+  g.fillStyle='#e3b54e';g.fillRect(bx-1+sw,24,3,10);g.fillRect(bx-3+sw,28,7,2);g.fillRect(bx-2+sw,22,1,2);g.fillRect(bx+1+sw,22,1,2);g.fillStyle='#5a1420';g.fillRect(bx-5+sw,16,1,36)}
+ for(const px of[44,280]){g.fillStyle='#3f3044';g.fillRect(px-7,10,14,138);g.fillStyle='#4f3f55';g.fillRect(px-5,10,3,138);g.fillStyle='#2a1f2d';g.fillRect(px+4,10,3,138);g.fillStyle='#5a4a60';g.fillRect(px-9,8,18,4);g.fillRect(px-9,140,18,6);
+  const fl=Math.sin(t/90+px)*1.2;g.fillStyle='#4a2a14';g.fillRect(px-1,62,3,8);g.fillStyle='rgba(255,170,60,.13)';g.beginPath();g.arc(px,58,18+fl,0,7);g.fill();g.fillStyle='#ff9a2a';g.fillRect(px-2,56-Math.round(fl),5,6);g.fillStyle='#ffe07a';g.fillRect(px-1,58-Math.round(fl),3,3)}
+ g.fillStyle='#3a2c26';g.fillRect(0,146,W,34);for(let x=0;x<W;x+=16)for(let y=146;y<H;y+=8){g.fillStyle=((x+y)/8)%2?'#33261f':'#3d2f28';g.fillRect(x,y,16,8)}
+ g.fillStyle='#7a1f2b';g.fillRect(28,151,292,13);g.fillStyle='#e3b54e';g.fillRect(28,151,292,1);g.fillRect(28,163,292,1);g.fillStyle='#5e1520';for(let x=36;x<W;x+=12)g.fillRect(x,156,4,3);
+ // door
+ const open=actor&&(actor.state==='in'&&actor.x>285||actor.state==='out'&&actor.x>285);
+ g.fillStyle='#120d14';g.fillRect(292,96,26,52);g.fillRect(295,92,20,4);
+ if(!open){g.fillStyle='#5a3a22';g.fillRect(294,98,22,50);g.fillStyle='#4a2e1a';for(let x=297;x<316;x+=5)g.fillRect(x,98,1,50);g.fillStyle='#8a8a90';g.fillRect(294,108,22,2);g.fillRect(294,134,22,2);g.fillStyle='#e3b54e';g.fillRect(297,122,2,3)}
+ else{g.fillStyle=night?'#0a0a14':'#6a5a40';g.fillRect(294,98,22,50)}
+ // throne + king
+ g.fillStyle='#8a6a1a';g.fillRect(16,92,30,58);g.fillStyle='#e3b54e';g.fillRect(17,93,28,56);g.fillStyle='#7a1f2b';g.fillRect(20,98,22,44);g.fillStyle='#e3b54e';g.fillRect(26,86,10,6);g.fillRect(29,82,4,4);g.fillStyle='#c0283a';g.fillRect(30,88,2,2);
+ drawPerson(g,31,146,C.king,0,false,true);
+ g.fillStyle='#b8902a';g.fillRect(14,130,7,12);g.fillRect(41,130,7,12);g.fillStyle='#e3b54e';g.fillRect(14,129,7,2);g.fillRect(41,129,7,2);g.fillStyle='#7a1f2b';g.fillRect(20,140,22,4);g.fillStyle='#8a6a1a';g.fillRect(16,144,4,6);g.fillRect(42,144,4,6);
+ // retainers present
+ if(S){let i=0;for(const k of['ghazi','samar','raad','nawal']){const st=retState(k);if(st==='متاح'||st==='مشغول اليوم'){drawPerson(g,60+i*13,157,C[k],0,false);i++}}}
+ drawPerson(g,268,157,C.guard,0,true);
+ // actor
+ if(actor){const sp=.9;if(actor.state==='in'){actor.x-=sp;if(actor.x<=actor.tx){actor.x=actor.tx;actor.state='idle';actor.cb&&actor.cb()}}
+  else if(actor.state==='out'){actor.x+=sp*1.2;if(actor.x>=318){const cb=actor.cb;actor=null;cb&&cb()}}
+  if(actor){const fr=actor.state==='idle'?0:(Math.floor(t/140)%2)+1;drawPerson(g,actor.x,157,C[actor.who]||C.guard,fr,actor.state!=='out')}}
+ // dust
+ if(!night){g.fillStyle='rgba(255,230,170,.5)';for(const d of dust){d.y+=d.v;d.x-=d.v*.4;if(d.y>150){d.y=20;d.x=60+Math.random()*200}g.fillRect(Math.round(d.x),Math.round(d.y),1,1)}}
+ if(night){g.fillStyle='rgba(8,10,40,.5)';g.fillRect(0,0,W,H)}
+ if(S&&chapter(S.week)>=3&&!night){g.fillStyle='rgba(120,40,20,.08)';g.fillRect(0,0,W,H)}
+}
+function loop(t){drawScene(t);requestAnimationFrame(loop)}
+function walkIn(who,cb){actor={who,x:312,tx:178,state:'in',cb};beep(220,.05,'triangle')}
+function walkOut(cb){if(!actor){cb();return}actor.state='out';actor.cb=cb}
+
+/* ---------- map ---------- */
+const mc=$('#map'),mg=mc.getContext('2d');
+let mapDrawn=false;
+function drawMap(){
+ const W=320,H=200;let seed=7;const r=()=>(seed=(seed*16807)%2147483647)/2147483647;
+ for(let y=0;y<H;y+=4)for(let x=0;x<W;x+=4){const ash=x>235+Math.sin(y/14)*8;const n=r();mg.fillStyle=ash?(n<.5?'#5a504a':'#625850'):(n<.33?'#4a6b3a':n<.66?'#527540':'#466336');mg.fillRect(x,y,4,4)}
+ for(let i=0;i<14;i++){const x=70+i*14+r()*8,y=8+r()*22,h=14+r()*10;mg.fillStyle='#6a6870';mg.beginPath();mg.moveTo(x,y+h);mg.lineTo(x+10,y);mg.lineTo(x+20,y+h);mg.fill();mg.fillStyle='#e8e8f0';mg.beginPath();mg.moveTo(x+7,y+5);mg.lineTo(x+10,y);mg.lineTo(x+13,y+5);mg.fill()}
+ mg.strokeStyle='#4a90c8';mg.lineWidth=4;mg.beginPath();mg.moveTo(140,40);mg.bezierCurveTo(110,60,90,62,70,78);mg.bezierCurveTo(50,94,30,96,0,118);mg.stroke();mg.strokeStyle='#7ab8e8';mg.lineWidth=1;mg.stroke();
+ for(let i=0;i<60;i++){const x=180+r()*60,y=140+r()*50;mg.fillStyle='#24401f';mg.fillRect(x|0,y|0,5,5);mg.fillStyle='#2f5228';mg.fillRect((x|0)+1,(y|0)-2,3,2)}
+ for(let i=0;i<14;i++){const x=245+r()*70,y=40+r()*140;mg.fillStyle='#2a2422';mg.fillRect(x|0,y|0,1,6);mg.fillRect((x|0)-2,(y|0)+1,5,1)}
+ mg.strokeStyle='#a88a5a';mg.lineWidth=2;mg.setLineDash([3,3]);for(const k in LOC){if(k==='castle')continue;mg.beginPath();mg.moveTo(150,105);mg.lineTo(LOC[k].x,LOC[k].y);mg.stroke()}mg.setLineDash([]);
+ mg.fillStyle='#5a5560';mg.fillRect(140,92,20,16);mg.fillStyle='#7a7580';mg.fillRect(138,88,6,20);mg.fillRect(156,88,6,20);mg.fillStyle='#8a1f30';mg.fillRect(148,82,4,8);
+ mg.fillStyle='#8a6a3a';mg.fillRect(86,134,12,8);mg.fillStyle='#a33';mg.fillRect(85,131,14,3);
+ mg.fillStyle='#d8dce6';mg.fillRect(33,162,10,10);mg.fillStyle='#9fd0ff';mg.fillRect(36,158,4,4);
+ mg.fillStyle='#2f5f8a';mg.fillRect(44,70,16,6);mg.fillStyle='#efe6d0';mg.fillRect(50,62,2,8);
+ mg.fillStyle='#3a1a10';mg.fillRect(272,78,16,10);mg.fillStyle='#c4552b';mg.fillRect(276,72,8,6);
+ mg.strokeStyle='#120d14';mg.lineWidth=6;mg.strokeRect(0,0,W,H);
+ mapDrawn=true;
+}
+let selLoc='castle';
+function renderNodes(){const box=$('#nodes');box.innerHTML='';
+ for(const k in LOC){const L=LOC[k];const ms=M.filter(m=>m.loc===k&&(!m.cond||m.cond()));const here=S.missions.filter(m=>M.find(x=>x.id===m.id).loc===k);
+  const b=document.createElement('button');b.className='node'+(k===selLoc?' sel':'');b.style.right=(100-L.x/320*100)+'%';b.style.top=(L.y/200*100)+'%';
+  b.innerHTML=`<i></i><em>${L.n}</em>${ms.length?`<span class="badge">${A(ms.length)}</span>`:''}${here.length?`<span class="busy">${here.map(m=>N[m.ret][0].split(' ').pop()).join('، ')}</span>`:''}`;
+  b.onclick=()=>{selLoc=k;renderCouncil()};b.setAttribute('aria-label',L.n);box.appendChild(b)}}
+
+/* ---------- court flow ---------- */
+function buildQueue(){
+ if(S.week===12){S.queue=['siege'];return}
+ const q=[];
+ for(const id in E){const e=E[id];if(!e.story||S.done[id])continue;if(S.week>=e.w[0]&&S.week<=e.w[1]&&(!e.cond||e.cond()))q.push(id)}
+ S.follow.filter(f=>f.w===S.week).forEach(f=>{if(!q.includes(f.id))q.push(f.id)});
+ S.follow=S.follow.filter(f=>f.w!==S.week);
+ const pool=Object.keys(E).filter(id=>{const e=E[id];return e.pool&&!S.done[id]&&S.week>=e.w[0]&&S.week<=e.w[1]&&(!e.cond||e.cond())}).sort(()=>Math.random()-.5);
+ const target=S.week===11?3:4;while(q.length<target&&pool.length)q.splice(Math.floor(Math.random()*(q.length+1)),0,pool.pop());
+ // keep herald first in week 1
+ if(S.week===1){q.sort((a,b)=>(a==='herald'?-1:b==='herald'?1:0))}
+ S.queue=q;
+}
+function startWeek(){
+ S.phase='court';S.usedW={};S.qi=0;S.wk=[];buildQueue();
+ save();showStage('scene');hud();
+ const ch=chapter(S.week);if(ch!==S.lastCh){S.lastCh=ch;$('#card').innerHTML=`<div>${CH[ch][0]}<small>${CH[ch][1]}</small></div>`;setTimeout(()=>{$('#card').innerHTML=''},3300)}
+ $('#panel').innerHTML=`<h3>صباح الأسبوع ${A(S.week)}</h3><p class="muted">يفتح الحاجب أبواب القاعة. ${A(S.queue.length)} ${S.queue.length>2?'رعايا ينتظرون':'في الانتظار'}.</p>`;
+ setTimeout(nextPetition,900);
+}
+function updQueue(){const q=$('#queue');const left=S.queue.length-S.qi-1;q.hidden=S.phase!=='court'||left<0;q.textContent=left>0?`في الانتظار: ${A(left)}`:'آخر الزوّار'}
+function nextPetition(){
+ if(S.qi>=S.queue.length){endCourt();return}
+ const id=S.queue[S.qi],ev=E[id];updQueue();
+ $('#panel').innerHTML=`<p class="muted">يدخل زائر…</p>`;
+ walkIn(ev.who,()=>showPetition(id));
+}
+let typing=null;
+function showPetition(id){
+ const ev=E[id];const[name,role]=N[ev.who]||['زائر',''];const txt=typeof ev.text==='function'?ev.text():ev.text;
+ $('#panel').innerHTML=`<div class="who"><canvas id="pt"></canvas><div><h2>${name}</h2><p>${role}</p></div></div>
+  <div class="speech" id="sp" title="انقر لإكمال النص"></div><div class="opts" id="opts" hidden></div>`;
+ portrait($('#pt'),ev.who);
+ const sp=$('#sp');let i=0;clearInterval(typing);
+ const finish=()=>{clearInterval(typing);sp.textContent=txt;renderOpts(id)};
+ typing=setInterval(()=>{i+=2;sp.textContent=txt.slice(0,i);if(i%8===0)beep(300+Math.random()*80,.02,'square',.015);if(i>=txt.length)finish()},18);
+ sp.onclick=finish;
+}
+function optState(o){
+ for(const[k,v]of Object.entries(o.cost||{}))if(S[k]<v)return'لا يكفي '+STATN[k];
+ if(o.req&&!avail(o.req))return N[o.req][0]+': '+retState(o.req);
+ if(o.need&&!o.need())return o.hint||'غير متاح';
+ return'';
+}
+function renderOpts(id){
+ const ev=E[id],box=$('#opts');if(!box||!box.hidden)return;box.hidden=false;
+ box.innerHTML=ev.opts.map((o,i)=>{const why=optState(o);
+  const req=o.req?`<span class="chip req">يرسل: ${N[o.req][0]}</span>`:'';
+  const risk=o.ch?`<span class="chip risk">نجاح ${A(o.ch.p*100)}٪</span>`:'';
+  const nd=o.need&&o.hint?`<span class="chip ${why?'bad':'req'}">${o.hint}</span>`:'';
+  return`<button class="opt" data-i="${i}" ${why?'disabled':''}><span>${o.t}</span><span class="chips">${costChips(o.cost)}${req}${risk}${why&&!o.hint?`<span class="chip bad">${why}</span>`:nd}</span></button>`}).join('');
+ box.querySelectorAll('.opt').forEach(b=>b.onclick=()=>choose(id,+b.dataset.i));
+}
+function choose(id,i){
+ const ev=E[id],o=ev.opts[i];if(optState(o))return;
+ beep(660,.05);
+ const costOut=[];for(const[k,v]of Object.entries(o.cost||{})){S[k]-=v;costOut.push([k,-v])}
+ if(o.req)S.usedW[o.req]=1;
+ S.done[id]=1;
+ let eff=o.e,res=o.r,ok=null;
+ if(o.ch){ok=Math.random()<o.ch.p;const b=ok?o.ch.ok:o.ch.no;eff=b.e;res=b.r}
+ const out=costOut.concat(apply(eff));if(costOut.length)floatDeltas(costOut);
+ if(out.some(([k,v])=>k==='gold'&&v>0))coin();
+ const [name]=N[ev.who];
+ S.log.push(`الأسبوع ${A(S.week)} · ${name}: ${o.t}`);
+ if(res==='end'){finale();return}
+ S.wk.push(`${name}: ${res}`);
+ $('#panel').innerHTML=`<div class="who"><canvas id="pt"></canvas><div><h2>${name}</h2><p>قرارك: ${o.t}</p></div></div>
+ <div class="speech result">${ok===true?'<b>نجاح. </b>':ok===false?'<b>فشل. </b>':''}${res}</div>
+ <div class="chips">${chipsFor(out)}</div>
+ <div class="row"><span class="muted">${S.qi+1<S.queue.length?'الزائر التالي ينتظر':'لا مزيد من الزوّار اليوم'}</span><button class="px gold" id="nx">التالي</button></div>`;
+ portrait($('#pt'),ev.who);hud();
+ $('#nx').onclick=()=>{$('#nx').disabled=true;S.qi++;walkOut(nextPetition)};$('#nx').focus();
+ if(S.hap<=0){setTimeout(()=>ending('revolt'),600)}
+}
+function endCourt(){
+ updQueue();$('#queue').hidden=true;
+ $('#panel').innerHTML=`<h3>انتهى الاستقبال</h3><p>أُغلقت أبواب القاعة. حان وقت المجلس: أرسل مستشاريك في المهام، وراجع الخزانة وقوانين الأسبوع، ثم اختم الأسبوع.</p><button class="px gold" id="toC">إلى غرفة المجلس</button>`;
+ $('#toC').onclick=()=>{S.phase='council';renderCouncil()};$('#toC').focus();
+}
+
+/* ---------- council ---------- */
+function showStage(which){$('#scene').hidden=which!=='scene';$('#mapWrap').hidden=which!=='map';if(which==='map'&&!mapDrawn)drawMap()}
+function retCard(k){const st=retState(k);const cls=st==='متاح'?'st-ok':st==='غائب'?'st-no':st==='في مهمة'?'st-mid':'st-no';
+ const sk=Object.entries(RET[k].sk).filter(([,v])=>v>=2).map(([s,v])=>SKN[s]+' '+'■'.repeat(v)).join(' · ');
+ return`<div class="ret${S.ret[k].on?'':' off'}"><canvas data-p="${k}"></canvas><div><b>${N[k][0]}</b><small class="${cls}">${st}${st==='مصاب'?' حتى الأسبوع '+A(S.ret[k].inj):''}</small><br><small class="muted">${sk}</small></div></div>`}
+function renderCouncil(){
+ showStage('map');renderNodes();hud();
+ const L=LOC[selLoc];const ms=M.filter(m=>m.loc===selLoc&&(!m.cond||m.cond()));
+ const ec=econ();
+ const proj={gold:ec.goldIn-ec.upkeep,food:ec.foodIn-ec.foodUse};
+ const keys=['ghazi','samar','raad','nawal'].filter(k=>S.ret[k].on||k!=='nawal'||!F('nonawal'));
+ $('#panel').innerHTML=`
+ <div class="sec"><h3>المجلس</h3><div class="rets">${keys.map(retCard).join('')}</div></div>
+ <div class="sec"><h3>${L.n}</h3>${ms.length?ms.map(m=>misCard(m)).join(''):'<p class="muted">لا مهمّات هنا هذا الأسبوع. اختر موقعًا آخر من الخريطة.</p>'}</div>
+ <div class="sec"><h3>الخزانة والقوانين</h3>
+  <div><span class="muted">الضرائب</span><div class="seg">${TAX.map((t,i)=>`<button class="px small${S.tax===i?' on':''}" data-tax="${i}">${t.n}</button>`).join('')}</div></div>
+  <div><span class="muted">حصص الطعام</span><div class="seg"><button class="px small${!S.ration?' on':''}" data-r="0">كاملة</button><button class="px small${S.ration?' on':''}" data-r="1">مقنّنة (−٢٥٪ استهلاك، −٤ رضا)</button></div></div>
+  <div class="row"><span class="muted">التجنيد: ٢٥ ذهبًا ← ١٠ جنود (−٥ سكان، −١ رضا)</span><button class="px small" id="rec" ${S.gold<25||S.pop<20?'disabled':''}>جنّد</button></div>
+  <div class="chips"><span class="chip ${proj.gold>=0?'good':'bad'}">${ic('gold')}الخزينة المتوقعة ${sg(proj.gold)} أسبوعيًا</span><span class="chip ${proj.food>=0?'good':'bad'}">${ic('food')}المؤن المتوقعة ${sg(proj.food)} أسبوعيًا</span>${ec.drought?'<span class="chip bad">الجفاف −٦ طعام (احفر الآبار)</span>':''}</div>
+ </div>
+ <button class="px gold" id="endW">اختم الأسبوع ${A(S.week)}</button>`;
+ $('#panel').querySelectorAll('canvas[data-p]').forEach(c=>portrait(c,c.dataset.p,'#120d14'));
+ $('#panel').querySelectorAll('[data-tax]').forEach(b=>b.onclick=()=>{S.tax=+b.dataset.tax;renderCouncil()});
+ $('#panel').querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{S.ration=+b.dataset.r;renderCouncil()});
+ $('#rec').onclick=()=>{S.gold-=25;apply({soldiers:10,pop:-5,hap:-1});floatDeltas([['gold',-25]]);renderCouncil()};
+ $('#panel').querySelectorAll('[data-send]').forEach(b=>b.onclick=()=>{const[mid,k]=b.dataset.send.split('|');const m=M.find(x=>x.id===mid);for(const[c,v]of Object.entries(m.cost||{}))S[c]-=v;S.missions.push({id:mid,ret:k,end:S.week+m.dur-1,at:S.week});beep(520,.06);renderCouncil()});
+ $('#panel').querySelectorAll('[data-cancel]').forEach(b=>b.onclick=()=>{const i=+b.dataset.cancel;const a=S.missions[i];const m=M.find(x=>x.id===a.id);for(const[c,v]of Object.entries(m.cost||{}))S[c]+=v;S.missions.splice(i,1);renderCouncil()});
+ $('#endW').onclick=confirmEnd;
+}
+function misCard(m){
+ const ai=S.missions.findIndex(a=>a.id===m.id);
+ let body;
+ if(ai>=0){const a=S.missions[ai];body=`<div class="row"><span class="chip req">${N[a.ret][0]} في المهمة حتى نهاية الأسبوع ${A(a.end)}</span>${a.at===S.week?`<button class="px small" data-cancel="${ai}">استدعِ</button>`:''}</div>`}
+ else{const can=Object.entries(m.cost||{}).every(([k,v])=>S[k]>=v);
+  const ks=['ghazi','samar','raad','nawal'].filter(k=>S.ret[k].on);
+  body=`<div class="sendrow">${ks.map(k=>{const ok=avail(k)&&can;return`<button class="px small" data-send="${m.id}|${k}" ${ok?'':'disabled'} title="${retState(k)}">${N[k][0].split(' ').pop()} · ${A(chance(m,k)*100)}٪</button>`}).join('')}</div>`}
+ return`<div class="mis"><header><b>${m.n}</b><span class="chips">${costChips(m.cost)}<span class="chip">${SKN[m.sk]}</span><span class="chip">${m.dur>1?'أسبوعان':'أسبوع'}</span>${m.risk?'<span class="chip risk">خطر إصابة</span>':''}</span></header><p>${m.d}</p>${body}</div>`}
+function confirmEnd(){
+ const idle=['ghazi','samar','raad','nawal'].filter(k=>avail(k));
+ const ec=econ();const warn=[];
+ if(idle.length)warn.push(`${idle.map(k=>N[k][0]).join('، ')} بلا مهمة.`);
+ if(S.food+ec.foodIn-ec.foodUse<0)warn.push('المؤن لن تكفي: سيجوع الناس.');
+ if(S.gold+ec.goldIn-ec.upkeep<0)warn.push('الخزينة ستعجز عن رواتب الجنود.');
+ if(!warn.length){endWeek();return}
+ $('#ov').hidden=false;$('#ov').innerHTML=`<div class="box"><h3>قبل أن تختم الأسبوع</h3>${warn.map(w=>`<p>${w}</p>`).join('')}<div class="row"><button class="px" id="cb">عودة</button><button class="px gold" id="cy">اختم على أي حال</button></div></div>`;
+ $('#cb').onclick=()=>$('#ov').hidden=true;$('#cy').onclick=()=>{$('#ov').hidden=true;endWeek()};
+}
+
+/* ---------- week end ---------- */
+function endWeek(){
+ const R={treasury:[],stores:[],missions:[],events:[]};
+ // missions
+ const keep=[];
+ for(const a of S.missions){if(a.end>S.week){keep.push(a);continue}
+  const m=M.find(x=>x.id===a.id);const ok=Math.random()<chance(m,a.ret);
+  const eff=ok?m.ok():m.no();let txt=(ok?'نجحت: ':'فشلت: ')+(ok?m.okT:m.noT);
+  if(!ok&&m.risk&&Math.random()<.5){eff.injure=[a.ret,m.risk];txt+=`، وأُصيب ${N[a.ret][0]}`}
+  const out=apply(eff);R.missions.push({who:N[a.ret][0],name:m.n,txt,out,ok});S.log.push(`الأسبوع ${A(S.week)} · مهمة «${m.n}» (${N[a.ret][0]}): ${ok?'نجاح':'فشل'}`)}
+ S.missions=keep;
+ // economy
+ const ec=econ();
+ R.treasury.push(['الضرائب ('+TAX[S.tax].n+')',Math.round((15+S.pop*.08+S.hap*.15)*TAX[S.tax].m)]);
+ if(S.rel.river>=60)R.treasury.push(['تجارة بني النهر',10]);
+ if(F('tolls'))R.treasury.push(['رسوم الجسور المخفّضة',-5]);
+ R.treasury.push(['رواتب الجنود',-ec.upkeep]);
+ S.gold+=ec.goldIn-ec.upkeep;
+ R.stores.push(['حصاد الحقول',17]);if(ec.drought)R.stores.push(['الجفاف',-ec.drought]);
+ R.stores.push(['إطعام السكان والجيش'+(S.ration?' (مقنّن)':''),-ec.foodUse]);
+ S.food+=ec.foodIn-ec.foodUse;
+ let dh=TAX[S.tax].h+(S.ration?-4:0);
+ if(S.gold<0){const d=Math.ceil(S.soldiers*.15);S.soldiers-=d;S.gold=0;dh-=5;R.events.push(`لم تُدفع الرواتب: فرّ ${A(d)} جنديًا.`)}
+ if(S.food<0){const d=Math.ceil(S.pop*.08);S.pop-=d;S.food=0;dh-=10;R.events.push(`مجاعة: مات أو رحل ${A(d)} من السكان.`)}
+ if(S.hap>=65){S.pop+=3;R.events.push('الرخاء يجذب العائلات: +٣ سكان.')}
+ if(S.hap>70)dh-=1;
+ if(dh){S.hap=clamp(S.hap+dh,0,100);R.events.push(`تغيّر رضا الشعب بسبب القوانين والأحوال: ${sg(dh)}.`)}
+ S.enemy+=6;R.events.push('جيش بهرام يكبر: يلتحق به الجائعون من الشرق.');
+ if(S.clues>=3&&!F('exposed')&&!F('cluenote')){S.flags.cluenote=1;R.events.push('نوال وسليم يتفقان: كل الأدلة تشير إلى خاتم الأسد. الأمير رستم.')}
+ const wk=S.week;S.week++;S.phase='report';hud();
+ const sumLine=(arr)=>arr.map(([n,v])=>`<li><span>${n}</span><span class="${v>=0?'p':'n'}">${sg(v)}</span></li>`).join('');
+ $('#panel').innerHTML=`<div class="ledger"><h3>دفتر الأسبوع ${A(wk)}</h3>
+ <div><h4>${ic('gold')} الخزينة</h4><ul>${sumLine(R.treasury)}<li><span><b>الرصيد</b></span><span>${A(S.gold)}</span></li></ul></div>
+ <div><h4>${ic('food')} المخازن</h4><ul>${sumLine(R.stores)}<li><span><b>الرصيد</b></span><span>${A(S.food)}</span></li></ul></div>
+ ${R.missions.length?`<div><h4>تقارير المهام</h4><ul>${R.missions.map(m=>`<li class="note" style="display:block"><b>${m.name}</b> · ${m.who}: ${m.txt}.</li>`).join('')}</ul></div>`:''}
+ ${S.wk.length?`<div><h4>ما جرى في القاعة</h4><ul>${S.wk.map(w=>`<li class="note" style="display:block">${w}</li>`).join('')}</ul></div>`:''}
+ <div><h4>أحوال المملكة</h4><ul>${R.events.map(e=>`<li class="note" style="display:block">${e}</li>`).join('')}</ul></div>
+ </div><button class="px gold" id="nw">${S.week===12?'بهرام عند الأسوار…':'الأسبوع '+A(S.week)}</button>`;
+ showStage('scene');
+ if(S.hap<=0){$('#nw').onclick=()=>ending('revolt');return}
+ $('#nw').onclick=startWeek;$('#nw').focus();
+}
+
+/* ---------- finale ---------- */
+function finale(){
+ if(F('peacedone')){ending('peace');return}
+ const me=myPower(),en=enemyPower();const r=me.total/en;
+ S.battle={me,en,r};
+ let k;if(r>=1.1)k=F('exposed')?(S.hap>=50?'dawn':'victory'):(S.hap>=60?'shadow':'stolen');else if(r>=.85)k='ashwin';else k=(F('betrothed')&&S.rel.horn>=50)?'exile':'fall';
+ ending(k);
+}
+const ENDS={
+ dawn:['الفجر فوق أرْوَند','انكسر جيش بهرام عند الأسوار، والخائن في القيد قبل أن تُفتح البوابة. حين خرجتَ إلى الساحة لم يهتف الناس لملكٍ منتصر فقط، بل لملكٍ سمعهم أسبوعًا بعد أسبوع. أرْوَند ستعيش جيلًا آخر.'],
+ victory:['نصرٌ بلا تصفيق','ربحتَ الحرب. كشفتَ الخائن، وصمدت الأسوار. لكنّ الشعب الذي جاع وانتظر لا يحتفل كثيرًا. التاج ثابت على رأسك، والقلوب بعيدة.'],
+ shadow:['نصرٌ وظل','صدّت أرْوَند الرماد. لكنّ الأمير رستم اختفى ليلة النصر مع رجال البرج، وخاتم الأسد ما زال في إصبعه. الشعب يحبّك، وهذا ما أنقذك من خنجره. حتى الآن.'],
+ stolen:['العرش المسروق','انتصر جيشك، لكنّ رستم كان أسرع. في ليلة الاحتفال فتح رجاله أبواب القصر، والشعب الساخط لم يتحرّك. تشاهد من نافذة البرج أخاك يلبس تاجك.'],
+ ashwin:['نصرٌ بطعم الرماد','صمدت أرْوَند بأعجوبة. تراجع بهرام، لكنّ نصف جيشك بقي في الحقول المحروقة. ستبني الأسوار من جديد، وستتعلّم أن النصر قد يكون أثقل من الهزيمة.'],
+ exile:['المنفى في الجبال','سقطت البوابة. لكنّ أهل القرن نزلوا ليلًا وفتحوا لعائلتك طريقًا إلى الجبال. لينا وجسّار يقودان القافلة. أرْوَند ليست لك الآن، لكنّ دمك ما زال حيًّا.'],
+ fall:['سقوط أرْوَند','دخل الرماد من البوابة الشرقية. كان الجيش أقلّ، والحلفاء أبعد، والوقت أقصر. يجلس بهرام على عرشك، ويُطعم شعبه من حقولك.'],
+ peace:['سلام الرماد','فتحتَ المخازن بدل البوابات. رأى جنود بهرام الخبز يُوزَّع على جائعي الشرق، فأنزلوا سيوفهم. لن تُكتب عن هذا أغانٍ حربية، لكنّ أطفال الطرفين سيكبرون. هذه أندر النهايات وأصعبها.'],
+ revolt:['ثورة الخبز','نفد صبر الشعب. اقتحم الحشد القاعة التي استقبلتَ فيها رعاياك. لا جيش بهرام ولا خيانة أخيك، بل شعبك هو من أنزلك عن العرش.'],
+};
+function ending(k){
+ S.phase='end';try{localStorage.removeItem(SAVE)}catch(e){}
+ const [t,body]=ENDS[k];const b=S.battle;
+ const lines=[];
+ if(b){lines.push(...b.me.parts.map(([n,v])=>`<li><span>${n}</span><span class="p">${A(v)}</span></li>`));lines.push(`<li><span><b>قوّتك</b></span><span>${A(b.me.total)}</span></li><li><span><b>جيش بهرام</b>${S.rel.moon>=70&&!F('betrayedmoon')?' (أضعفه سحر القمر)':''}${!F('exposed')?' (بمساعدة الخائن)':''}</span><span class="n">${A(b.en)}</span></li>`)}
+ const fam=[];if(F('linatrust'))fam.push('لينا وثقت بك حتى النهاية.');if(F('linacold'))fam.push('لينا لم تسامحك على الخطبة.');if(F('queentrust'))fam.push('الملكة ديما بقيت إلى جانبك.');if(F('pardoned'))fam.push('رستم قاتل في الصف الأول ليمحو عاره.');if(F('betrayedmoon'))fam.push('أسيل لم تعد من الشرق.');
+ $('#ov').hidden=false;$('#ov').innerHTML=`<div class="box ending"><p class="muted">النهاية</p><h1>${t}</h1><p>${body}</p>
+ ${lines.length?`<div class="ledger"><h4>ميزان الحصار</h4><ul>${lines.join('')}</ul></div>`:''}
+ ${fam.length?`<p class="muted">${fam.join(' ')}</p>`:''}
+ <p class="muted">رضا ${A(S.hap)} · جنود ${A(S.soldiers)} · بنو النهر ${A(S.rel.river)} · أهل القرن ${A(S.rel.horn)} · رهبنة القمر ${A(S.rel.moon)}</p>
+ <p class="muted">هناك تسع نهايات. قرارات مختلفة تفتح طرقًا مختلفة.</p>
+ <button class="px gold" id="again">احكم من جديد</button><p class="credit">إنتاج استوديو قرطاس</p></div>`;
+ $('#again').onclick=()=>{S=fresh();$('#ov').hidden=true;startWeek()};
+}
+
+/* ---------- modals ---------- */
+function modal(html){$('#ov').hidden=false;$('#ov').innerHTML=`<div class="box">${html}<button class="px gold" id="mx">إغلاق</button></div>`;$('#mx').onclick=()=>$('#ov').hidden=true;$('#mx').focus()}
+function showFactions(){
+ const me=myPower();
+ modal(`<h3>الفصائل والحرب</h3><p class="muted">الفصيل الذي تبلغ علاقته ٧٠ يقف معك يوم الحصار في الأسبوع ١٢.</p>
+ ${['river','horn','moon'].map(k=>{const f=FAC[k],v=S.rel[k];return`<div class="fac"><div class="row"><b>${ic(k)} ${f.n} <span class="muted">(${f.lord})</span></b><b>${A(v)}</b></div><div class="bar"><i style="width:${v}%;background:${v>=70?'var(--moss)':'var(--gold)'}"></i><u></u></div><small>يعطون: ${f.give}</small><small class="muted">يريدون: ${f.want}</small></div>`}).join('')}
+ <div class="ledger"><h4>ميزان الحرب الآن</h4><ul>${me.parts.map(([n,v])=>`<li><span>${n}</span><span class="p">${A(v)}</span></li>`).join('')}<li><span><b>قوّتك المتوقعة</b></span><span>${A(me.total)}</span></li><li><span><b>جيش بهرام</b></span><span class="n">${F('scouted')?A(enemyPower()):'مجهول، أرسل من يستطلعه'}</span></li></ul></div>`)}
+function showLog(){modal(`<h3>سجل الحكم</h3><div class="log">${S.log.length?S.log.slice().reverse().map(l=>`<div>${l}</div>`).join(''):'<p class="muted">لم تُتخذ قرارات بعد.</p>'}</div>`)}
+function showHelp(){modal(`<h3>طريقة اللعب</h3>
+<p><b>كل أسبوع له ثلاث مراحل.</b> صباحًا تستقبل الرعايا والرسل في قاعة العرش وتقرّر في طلباتهم. بعضها يكلّف ذهبًا أو طعامًا أو جنودًا، وبعضها يحتاج إرسال أحد مستشاريك، فيصبح مشغولًا بقية الأسبوع.</p>
+<p>بعد الاستقبال تنتقل إلى <b>المجلس</b>: خريطة المملكة ومهمّات في كل موقع. أرسل كل مستشار إلى مهمة تناسب مهارته، فنسبة النجاح تعتمد عليها. وغيّر الضرائب وحصص الطعام وجنّد الجنود.</p>
+<p>عند ختم الأسبوع تُحسب الضرائب ورواتب الجيش والطعام المستهلك، وتصلك تقارير المهام. الجوع يقتل السكان، والإفلاس يُفرّ الجنود، ورضا الشعب إن وصل صفرًا سقط عرشك.</p>
+<p><b>الهدف:</b> في الأسبوع ١٢ يصل بهرام. اجمع جيشًا، وارفع الأسوار، واكسب ثلاثة فصائل، واكشف الخائن في بلاطك قبل أن يفتح البوابة. أو ابحث عن طريق لا يحتاج حربًا.</p>`)}
+
+/* ---------- save / boot ---------- */
+const SAVE='arvand_save_v1';
+function save(){try{localStorage.setItem(SAVE,JSON.stringify(S))}catch(e){}}
+function load(){try{const s=localStorage.getItem(SAVE);return s?JSON.parse(s):null}catch(e){return null}}
+function title(){
+ const sv=load();
+ $('#ov').hidden=false;$('#ov').innerHTML=`<div class="box"><div class="title-name">عرش أرْوَند</div><p class="title-sub">لعبة إدارة مملكة وقرارات</p>
+ <p>أنت الملك سالار. الجفاف يأكل حقولك، وأخوك يبتسم أكثر مما ينبغي، وفي الشرق يجمع بهرام سيّد أرض الرماد جيشًا جائعًا. أمامك اثنا عشر أسبوعًا قبل أن يطرق بوابتك.</p>
+ <p class="muted">استقبل رعاياك، وأدِر الذهب والطعام والجنود، وأرسل مستشاريك في المهام، واكسب الحلفاء أو اخسرهم. كل قرار يُحسب.</p>
+ <div class="row"><button class="px gold" id="ng">ابدأ الحكم</button>${sv?`<button class="px" id="cg">تابع من الأسبوع ${A(sv.week)}</button>`:''}<button class="px" id="hp">طريقة اللعب</button></div>
+ <p class="credit">إنتاج استوديو قرطاس</p></div>`;
+ $('#ng').onclick=()=>{S=fresh();$('#ov').hidden=true;beep(392,.1);startWeek()};
+ if(sv)$('#cg').onclick=()=>{S=sv;S.lastCh=0;$('#ov').hidden=true;startWeek()};
+ $('#hp').onclick=showHelp;
+}
+function boot(data){
+ S=fresh();hud();$('#panel').innerHTML=`<h3>قاعة العرش</h3><p class="muted">الشموع مضاءة، والعرش ينتظر.</p>`;
+ requestAnimationFrame(loop);
+ if(data&&data.S&&data.S.phase!=='end'){S=data.S;S.lastCh=0;startWeek()}else title();
+}
+window.claude?.hot?.snapshot?.(()=>({S}));
+window.__arvand={get S(){return S},E,M,choose,endWeek,finale,myPower,enemyPower,startWeek,renderCouncil};
+(window.claude?.hot?.ready?window.claude.hot.ready(boot):boot(window.claude?.hot?.data??{}));
+</script>
+
+</body>
+</html>
