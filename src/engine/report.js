@@ -17,7 +17,7 @@ function endWeek(){
  if(S.hap>=65){S.pop+=3;R.events.push('الرخاء يجذب العائلات: +٣ سكان.')}
  if(S.hap>70)dh-=1;
  if(dh){S.hap=clamp(S.hap+dh,0,100);R.events.push(`تغيّر رضا الشعب بسبب القوانين والأحوال: ${sg(dh)}.`)}
- S.enemy+=DIFF[S.diff].growth;R.events.push('جيش بهرام يكبر: يلتحق به الجائعون من الشرق.');
+ S.enemy+=DIFF[S.diff].growth;S.enemyNat=(S.enemyNat||S.enemy)+DIFF[S.diff].growth;R.events.push('جيش بهرام يكبر: يلتحق به الجائعون من الشرق.');
  if(S.clues>=3&&!F('exposed')&&!F('cluenote')){S.flags.cluenote=1;R.events.push('نوال وسليم يتفقان: كل الأدلة تشير إلى خاتم الأسد. الأمير رستم.')}
  for(const l of run('weekEnd'))R.events.push(l);
  const wk=S.week;S.week++;S.phase='report';hud();sfx('bell');

@@ -1,11 +1,11 @@
 /* ===== ENGINE: state, rules, effects ===== */
 let S;
 const DIFF={
- easy:{n:'ملك جديد',d:'موارد أكثر، وجيش بهرام أصغر بأربعين، وجفاف أخف.',gold:170,food:120,enemy:-40,drought:3,growth:4},
- normal:{n:'ملك',d:'التوازن الذي صُمّمت عليه اللعبة.',gold:120,food:90,enemy:0,drought:6,growth:6},
- hard:{n:'طاغية الجفاف',d:'جفاف أقسى، وجيش أكبر بخمسين، وموارد أقل. لمن عرف اللعبة.',gold:90,food:70,enemy:50,drought:9,growth:8},
+ easy:{n:'ملك جديد',d:'موارد أكثر، وجيش بهرام أصغر وأبطأ نموًّا، وجفاف أخف.',gold:170,food:120,enemy:330,drought:3,growth:14},
+ normal:{n:'ملك',d:'التوازن الذي صُمّمت عليه اللعبة.',gold:120,food:90,enemy:520,drought:6,growth:22},
+ hard:{n:'طاغية الجفاف',d:'جفاف أقسى، وجيش أكبر بكثير، وموارد أقل. لمن عرف اللعبة.',gold:90,food:70,enemy:640,drought:9,growth:24},
 };
-function fresh(diff){diff=diff||'normal';const D=DIFF[diff];return{v:2,diff,week:1,gold:D.gold,food:D.food,hap:55,soldiers:60,pop:150,fort:0,enemy:240+D.enemy,clues:0,sabotage:0,morale:0,arms:0,
+function fresh(diff){diff=diff||'normal';const D=DIFF[diff];return{v:2,diff,week:1,gold:D.gold,food:D.food,hap:55,soldiers:60,pop:150,fort:0,enemy:D.enemy,enemyNat:D.enemy,clues:0,sabotage:0,morale:0,arms:0,
  tax:1,ration:0,decree:'none',rel:{river:40,horn:35,moon:40},flags:{},done:{},follow:[],deferred:[],esc:{},lies:{},checked:{},
  ret:Object.fromEntries(RKEYS.map(k=>[k,{on:['ghazi','samar','raad'].includes(k)?1:0,inj:0,mod:0}])),
  items:[],son:{war:0,wis:0,kind:0},market:{grain:10,arms:30},
@@ -37,7 +37,7 @@ function econ(){
  return{lines,gold:sum('gold'),food:sum('food')};
 }
 econ.extra=[];
-function enemyPower(){let e=S.enemy;if(!F('exposed'))e+=F('vanguard')?60:F('tower')?35:15;if(S.rel.moon>=70&&!F('betrayedmoon'))e*=.8;if(S.plan==='raid')e*=.85;return Math.round(e)}
+function enemyPower(){/* reductions can't take the army below 80% of its natural strength */let e=Math.max(S.enemy,(S.enemyNat||S.enemy)*.8);if(!F('exposed'))e+=F('vanguard')?60:F('tower')?35:15;if(S.rel.moon>=70&&!F('betrayedmoon'))e*=.9;if(S.plan==='raid')e*=.85;return Math.round(e)}
 function myPower(){const parts=[];let p=S.soldiers;if(S.plan==='ambush')p*=1.33;parts.push(['جنودك'+(S.plan==='ambush'?' (كمين ×١٫٣٣)':''),Math.round(p)]);
  if(S.rel.horn>=70)parts.push(['محاربو أهل القرن',80]);
  if(S.rel.river>=70)parts.push(['بحّارة بني النهر',40]);
@@ -46,6 +46,8 @@ function myPower(){const parts=[];let p=S.soldiers;if(S.plan==='ambush')p*=1.33;
  if(F('smith'))parts.push(['نصال مشحوذة',20]);
  for(const f of myPower.extra)f(parts);
  let total=parts.reduce((a,b)=>a+b[1],0);
+ /* a very large army is harder to feed and command */
+ if(total>350){const cut=Math.round((total-350)*.4);parts.push(['صعوبة قيادة جيش كبير',-cut]);total-=cut}
  if(S.morale){const m=Math.round(total*S.morale/100);parts.push(['المعنويات (+'+A(S.morale)+'٪)',m]);total+=m}
  return{total,parts}}
 myPower.extra=[];
@@ -54,7 +56,7 @@ myPower.extra=[];
 function apply(e){const out=[];if(!e)return out;
  for(const k of['gold','food','hap','soldiers','pop','fort','enemy','clues','morale','arms'])if(e[k]){
   const before=S[k];let v=S[k]+e[k];
-  if(k==='hap')v=clamp(v,0,100);else if(k==='fort')v=clamp(v,0,3);else if(k==='morale')v=clamp(v,-30,60);else v=Math.max(0,v);
+  if(k==='hap')v=clamp(v,0,100);else if(k==='fort')v=clamp(v,0,3);else if(k==='morale')v=clamp(v,-30,30);else v=Math.max(0,v);
   S[k]=v;if(v!==before)out.push([k,v-before])}
  for(const f of['river','horn','moon'])if(e[f]){const b=S.rel[f];S.rel[f]=clamp(b+e[f],0,100);if(S.rel[f]!==b)out.push([f,S.rel[f]-b])}
  if(e.set)e.set.forEach(f=>S.flags[f]=1);
@@ -87,6 +89,6 @@ function migrate(s){if(!s||s.v!==2)return null;const f=fresh(s.diff||'normal');
  for(const k in f)if(s[k]===undefined)s[k]=f[k];
  for(const k of RKEYS)if(!s.ret[k])s.ret[k]=f.ret[k];else if(s.ret[k].mod===undefined)s.ret[k].mod=0;
  for(const k of['market','son','stats','rel'])s[k]=Object.assign({},f[k],s[k]);
- if(!DIFF[s.diff])s.diff='normal';return s}
+ if(!DIFF[s.diff])s.diff='normal';if(s.enemyNat===undefined)s.enemyNat=s.enemy;return s}
 function load(){return migrate(store.get(SAVE,null))}
 let FINALE=null;/* set by siege.js: replaces the direct battle calculation */

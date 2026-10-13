@@ -717,18 +717,18 @@ const SKN={war:'القتال',talk:'الدبلوماسية',wild:'البرّية
 const FAC={
  river:{n:'بنو النهر',lord:'اللورد مِهران',give:'٤٠ بحّارًا مسلّحًا يوم الحصار + ١٠ ذهب أسبوعيًا من التجارة (عند ٦٠)',want:'تخفيف الرسوم، الوفاء بالديون، الحماية من القراصنة',seal:'#2f6f9a'},
  horn:{n:'أهل القرن',lord:'الزعيم بُرهان',give:'٨٠ محاربًا جبليًا يوم الحصار',want:'روابط الدم، الشجاعة، الحديد',seal:'#7a5a3a'},
- moon:{n:'رهبنة القمر',lord:'الكاهنة أسيل',give:'سحرٌ يُضعف جيش بهرام بمقدار الخُمس',want:'معبد في العاصمة، التسامح، الرحمة بالغرباء',seal:'#6a7ab0'},
+ moon:{n:'رهبنة القمر',lord:'الكاهنة أسيل',give:'سحرٌ يُضعف جيش بهرام بمقدار العُشر',want:'معبد في العاصمة، التسامح، الرحمة بالغرباء',seal:'#6a7ab0'},
 };
 
 /* ---- engine/core.js ---- */
 /* ===== ENGINE: state, rules, effects ===== */
 let S;
 const DIFF={
- easy:{n:'ملك جديد',d:'موارد أكثر، وجيش بهرام أصغر بأربعين، وجفاف أخف.',gold:170,food:120,enemy:-40,drought:3,growth:4},
- normal:{n:'ملك',d:'التوازن الذي صُمّمت عليه اللعبة.',gold:120,food:90,enemy:0,drought:6,growth:6},
- hard:{n:'طاغية الجفاف',d:'جفاف أقسى، وجيش أكبر بخمسين، وموارد أقل. لمن عرف اللعبة.',gold:90,food:70,enemy:50,drought:9,growth:8},
+ easy:{n:'ملك جديد',d:'موارد أكثر، وجيش بهرام أصغر وأبطأ نموًّا، وجفاف أخف.',gold:170,food:120,enemy:330,drought:3,growth:14},
+ normal:{n:'ملك',d:'التوازن الذي صُمّمت عليه اللعبة.',gold:120,food:90,enemy:520,drought:6,growth:22},
+ hard:{n:'طاغية الجفاف',d:'جفاف أقسى، وجيش أكبر بكثير، وموارد أقل. لمن عرف اللعبة.',gold:90,food:70,enemy:640,drought:9,growth:24},
 };
-function fresh(diff){diff=diff||'normal';const D=DIFF[diff];return{v:2,diff,week:1,gold:D.gold,food:D.food,hap:55,soldiers:60,pop:150,fort:0,enemy:240+D.enemy,clues:0,sabotage:0,morale:0,arms:0,
+function fresh(diff){diff=diff||'normal';const D=DIFF[diff];return{v:2,diff,week:1,gold:D.gold,food:D.food,hap:55,soldiers:60,pop:150,fort:0,enemy:D.enemy,enemyNat:D.enemy,clues:0,sabotage:0,morale:0,arms:0,
  tax:1,ration:0,decree:'none',rel:{river:40,horn:35,moon:40},flags:{},done:{},follow:[],deferred:[],esc:{},lies:{},checked:{},
  ret:Object.fromEntries(RKEYS.map(k=>[k,{on:['ghazi','samar','raad'].includes(k)?1:0,inj:0,mod:0}])),
  items:[],son:{war:0,wis:0,kind:0},market:{grain:10,arms:30},
@@ -760,7 +760,7 @@ function econ(){
  return{lines,gold:sum('gold'),food:sum('food')};
 }
 econ.extra=[];
-function enemyPower(){let e=S.enemy;if(!F('exposed'))e+=F('vanguard')?60:F('tower')?35:15;if(S.rel.moon>=70&&!F('betrayedmoon'))e*=.8;if(S.plan==='raid')e*=.85;return Math.round(e)}
+function enemyPower(){/* reductions can't take the army below 80% of its natural strength */let e=Math.max(S.enemy,(S.enemyNat||S.enemy)*.8);if(!F('exposed'))e+=F('vanguard')?60:F('tower')?35:15;if(S.rel.moon>=70&&!F('betrayedmoon'))e*=.9;if(S.plan==='raid')e*=.85;return Math.round(e)}
 function myPower(){const parts=[];let p=S.soldiers;if(S.plan==='ambush')p*=1.33;parts.push(['جنودك'+(S.plan==='ambush'?' (كمين ×١٫٣٣)':''),Math.round(p)]);
  if(S.rel.horn>=70)parts.push(['محاربو أهل القرن',80]);
  if(S.rel.river>=70)parts.push(['بحّارة بني النهر',40]);
@@ -769,6 +769,8 @@ function myPower(){const parts=[];let p=S.soldiers;if(S.plan==='ambush')p*=1.33;
  if(F('smith'))parts.push(['نصال مشحوذة',20]);
  for(const f of myPower.extra)f(parts);
  let total=parts.reduce((a,b)=>a+b[1],0);
+ /* a very large army is harder to feed and command */
+ if(total>350){const cut=Math.round((total-350)*.4);parts.push(['صعوبة قيادة جيش كبير',-cut]);total-=cut}
  if(S.morale){const m=Math.round(total*S.morale/100);parts.push(['المعنويات (+'+A(S.morale)+'٪)',m]);total+=m}
  return{total,parts}}
 myPower.extra=[];
@@ -777,7 +779,7 @@ myPower.extra=[];
 function apply(e){const out=[];if(!e)return out;
  for(const k of['gold','food','hap','soldiers','pop','fort','enemy','clues','morale','arms'])if(e[k]){
   const before=S[k];let v=S[k]+e[k];
-  if(k==='hap')v=clamp(v,0,100);else if(k==='fort')v=clamp(v,0,3);else if(k==='morale')v=clamp(v,-30,60);else v=Math.max(0,v);
+  if(k==='hap')v=clamp(v,0,100);else if(k==='fort')v=clamp(v,0,3);else if(k==='morale')v=clamp(v,-30,30);else v=Math.max(0,v);
   S[k]=v;if(v!==before)out.push([k,v-before])}
  for(const f of['river','horn','moon'])if(e[f]){const b=S.rel[f];S.rel[f]=clamp(b+e[f],0,100);if(S.rel[f]!==b)out.push([f,S.rel[f]-b])}
  if(e.set)e.set.forEach(f=>S.flags[f]=1);
@@ -810,7 +812,7 @@ function migrate(s){if(!s||s.v!==2)return null;const f=fresh(s.diff||'normal');
  for(const k in f)if(s[k]===undefined)s[k]=f[k];
  for(const k of RKEYS)if(!s.ret[k])s.ret[k]=f.ret[k];else if(s.ret[k].mod===undefined)s.ret[k].mod=0;
  for(const k of['market','son','stats','rel'])s[k]=Object.assign({},f[k],s[k]);
- if(!DIFF[s.diff])s.diff='normal';return s}
+ if(!DIFF[s.diff])s.diff='normal';if(s.enemyNat===undefined)s.enemyNat=s.enemy;return s}
 function load(){return migrate(store.get(SAVE,null))}
 let FINALE=null;/* set by siege.js: replaces the direct battle calculation */
 
@@ -1808,7 +1810,7 @@ function endWeek(){
  if(S.hap>=65){S.pop+=3;R.events.push('الرخاء يجذب العائلات: +٣ سكان.')}
  if(S.hap>70)dh-=1;
  if(dh){S.hap=clamp(S.hap+dh,0,100);R.events.push(`تغيّر رضا الشعب بسبب القوانين والأحوال: ${sg(dh)}.`)}
- S.enemy+=DIFF[S.diff].growth;R.events.push('جيش بهرام يكبر: يلتحق به الجائعون من الشرق.');
+ S.enemy+=DIFF[S.diff].growth;S.enemyNat=(S.enemyNat||S.enemy)+DIFF[S.diff].growth;R.events.push('جيش بهرام يكبر: يلتحق به الجائعون من الشرق.');
  if(S.clues>=3&&!F('exposed')&&!F('cluenote')){S.flags.cluenote=1;R.events.push('نوال وسليم يتفقان: كل الأدلة تشير إلى خاتم الأسد. الأمير رستم.')}
  for(const l of run('weekEnd'))R.events.push(l);
  const wk=S.week;S.week++;S.phase='report';hud();sfx('bell');
@@ -2015,7 +2017,7 @@ function siegePhase(){
  if(SG.phase===1&&SG.traitor&&!SG.traitorDone){siegeTraitor();return}
  const P=PHASES[SG.phase],opts=P.opts();sfx('drum');
  $('#panel').innerHTML=`<h3>${P.title}</h3>${siegeBar()}<div class="speech">${txt(P.text)}</div><div class="opts">${opts.map((o,i)=>{const no=o.need&&!o.need();return`<button class="opt siege-pick" data-sp="${i}" ${no?'disabled':''}><span>${o.t}</span>${o.need?`<span class="chips"><span class="chip ${no?'bad':'req'}">${o.hint}</span></span>`:''}</button>`}).join('')}</div>${SG.log.length?`<div class="ledger"><ul>${SG.log.map(l=>`<li class="note" style="display:block">${l}</li>`).join('')}</ul></div>`:''}`;
- $$('[data-sp]').forEach(b=>b.onclick=()=>{if(SG.busy)return;SG.busy=1;$$('.siege-pick').forEach(x=>x.disabled=true);const o=opts[+b.dataset.sp];const[dm,de,txt_]=o.r;SG.my*=1+dm;SG.en*=1+de;if(o.e)apply(o.e);SG.log.push(`${P.title.split(':')[1].trim()}: ${txt_}`);
+ $$('[data-sp]').forEach(b=>b.onclick=()=>{if(SG.busy)return;SG.busy=1;$$('.siege-pick').forEach(x=>x.disabled=true);const o=opts[+b.dataset.sp];const[dm,de,txt_]=o.r;SG.my*=1+dm;SG.en*=1+de*.6;if(o.e)apply(o.e);SG.log.push(`${P.title.split(':')[1].trim()}: ${txt_}`);
   sfx(de<-.1?'good':'clash');if(de<0)for(let k=0;k<3;k++)SG.fires.push({x:SG.enemyX+Math.random()*60,y:132+Math.random()*10});SG.phase++;setTimeout(()=>{SG.busy=0;siegePhase()},400)});
 }
 function siegeTraitor(){
@@ -2037,7 +2039,7 @@ function siegeEnd(){
 }
 function speechStart(){
  let round=0,total=0;const lines=[];
- const show=()=>{if(round>=SPEECH.length){S.morale=clamp(S.morale+total,-30,60);S.speech=lines;startSiege();return}
+ const show=()=>{if(round>=SPEECH.length){S.morale=clamp(S.morale+total,-30,30);S.speech=lines;startSiege();return}
   const R=SPEECH[round];
   $('#panel').innerHTML=`<h3>خطبة الملك: ${R.title}</h3><p class="muted">آلاف العيون على الشرفة. كل جملة تُحسب، والكلام الذي لا يصدّقه الناس يضرّ. (${ic('morale')} المعنويات: ${sg(S.morale+total)}٪)</p>${lines.length?`<div class="ledger"><ul>${lines.map(l=>`<li class="note" style="display:block">${l}</li>`).join('')}</ul></div>`:''}<div class="opts speech-pick">${R.opts.map((o,i)=>`<button class="opt siege-pick" data-sq="${i}">${o.t}</button>`).join('')}</div>`;
   $$('[data-sq]').forEach(b=>b.onclick=()=>{const o=R.opts[+b.dataset.sq];const[v,res]=o.f();total+=v;lines.push(`${o.t} ← ${res} (${sg(v)}٪)`);sfx(v>0?'good':'bad');round++;show()})};

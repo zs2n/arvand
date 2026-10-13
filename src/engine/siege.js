@@ -60,7 +60,7 @@ function siegePhase(){
  if(SG.phase===1&&SG.traitor&&!SG.traitorDone){siegeTraitor();return}
  const P=PHASES[SG.phase],opts=P.opts();sfx('drum');
  $('#panel').innerHTML=`<h3>${P.title}</h3>${siegeBar()}<div class="speech">${txt(P.text)}</div><div class="opts">${opts.map((o,i)=>{const no=o.need&&!o.need();return`<button class="opt siege-pick" data-sp="${i}" ${no?'disabled':''}><span>${o.t}</span>${o.need?`<span class="chips"><span class="chip ${no?'bad':'req'}">${o.hint}</span></span>`:''}</button>`}).join('')}</div>${SG.log.length?`<div class="ledger"><ul>${SG.log.map(l=>`<li class="note" style="display:block">${l}</li>`).join('')}</ul></div>`:''}`;
- $$('[data-sp]').forEach(b=>b.onclick=()=>{if(SG.busy)return;SG.busy=1;$$('.siege-pick').forEach(x=>x.disabled=true);const o=opts[+b.dataset.sp];const[dm,de,txt_]=o.r;SG.my*=1+dm;SG.en*=1+de;if(o.e)apply(o.e);SG.log.push(`${P.title.split(':')[1].trim()}: ${txt_}`);
+ $$('[data-sp]').forEach(b=>b.onclick=()=>{if(SG.busy)return;SG.busy=1;$$('.siege-pick').forEach(x=>x.disabled=true);const o=opts[+b.dataset.sp];const[dm,de,txt_]=o.r;SG.my*=1+dm;SG.en*=1+de*.6;if(o.e)apply(o.e);SG.log.push(`${P.title.split(':')[1].trim()}: ${txt_}`);
   sfx(de<-.1?'good':'clash');if(de<0)for(let k=0;k<3;k++)SG.fires.push({x:SG.enemyX+Math.random()*60,y:132+Math.random()*10});SG.phase++;setTimeout(()=>{SG.busy=0;siegePhase()},400)});
 }
 function siegeTraitor(){
@@ -82,7 +82,7 @@ function siegeEnd(){
 }
 function speechStart(){
  let round=0,total=0;const lines=[];
- const show=()=>{if(round>=SPEECH.length){S.morale=clamp(S.morale+total,-30,60);S.speech=lines;startSiege();return}
+ const show=()=>{if(round>=SPEECH.length){S.morale=clamp(S.morale+total,-30,30);S.speech=lines;startSiege();return}
   const R=SPEECH[round];
   $('#panel').innerHTML=`<h3>خطبة الملك: ${R.title}</h3><p class="muted">آلاف العيون على الشرفة. كل جملة تُحسب، والكلام الذي لا يصدّقه الناس يضرّ. (${ic('morale')} المعنويات: ${sg(S.morale+total)}٪)</p>${lines.length?`<div class="ledger"><ul>${lines.map(l=>`<li class="note" style="display:block">${l}</li>`).join('')}</ul></div>`:''}<div class="opts speech-pick">${R.opts.map((o,i)=>`<button class="opt siege-pick" data-sq="${i}">${o.t}</button>`).join('')}</div>`;
   $$('[data-sq]').forEach(b=>b.onclick=()=>{const o=R.opts[+b.dataset.sq];const[v,res]=o.f();total+=v;lines.push(`${o.t} ← ${res} (${sg(v)}٪)`);sfx(v>0?'good':'bad');round++;show()})};
