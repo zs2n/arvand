@@ -34,7 +34,7 @@ const scaleCost=(c,m)=>Object.fromEntries(Object.entries(c||{}).map(([k,v])=>[k,
 function scaleEff(e,m){if(!e||m===1)return e;const o={...e};for(const k in o)if(typeof o[k]==='number'&&o[k]<0)o[k]=Math.round(o[k]*m);return o}
 function optionsOf(id){const ev=E[id];let opts=ev.opts.map((o,i)=>({...o,_i:i}));
  for(const f of HOOK.optionsExtra){const r=f(id,opts);if(r)opts=r}
- if((ev.pool||ev.defer)&&!S.esc[id]&&S.week<11)opts.push({t:'أجّل إلى الأسبوع القادم',defer:1,_i:-1});
+ if((ev.pool||ev.defer)&&!S.esc[id]&&!S.checked[id]&&S.week<11)opts.push({t:'أجّل إلى الأسبوع القادم',defer:1,_i:-1});
  return opts}
 function optState(o,id){
  const m=id?esc(id):1;
